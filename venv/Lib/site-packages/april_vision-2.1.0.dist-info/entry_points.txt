@@ -1,0 +1,2 @@
+[console_scripts]
+april_vision = april_vision.cli:main

@@ -1,0 +1,100 @@
+Metadata-Version: 2.1
+Name: april-vision
+Version: 2.1.0
+Summary: An AprilTags wrapper with camera discovery and axis conversion.
+Home-page: https://github.com/WillB97/april_vision
+Author: "Will Barber, Joshua Perriman"
+License: MIT
+Requires-Python: >=3.8
+Description-Content-Type: text/markdown
+License-File: LICENSE
+Requires-Dist: pyapriltags <4,>=3.3.0.2
+Requires-Dist: numpy <2,>=1.21
+Requires-Dist: pyquaternion <1,>=0.9.9
+Requires-Dist: winsdk <2,>=1.0.0b7 ; platform_system == "Windows"
+Provides-Extra: cli
+Requires-Dist: Pillow <10,>=9.4.0 ; extra == 'cli'
+Requires-Dist: tabulate <1,>=0.9.0 ; extra == 'cli'
+Requires-Dist: font-roboto >=0.0.1 ; extra == 'cli'
+Provides-Extra: dev
+Requires-Dist: flake8 ; extra == 'dev'
+Requires-Dist: isort ; extra == 'dev'
+Requires-Dist: mypy ; extra == 'dev'
+Requires-Dist: build ; extra == 'dev'
+Requires-Dist: types-Pillow ; extra == 'dev'
+Requires-Dist: types-tabulate ; extra == 'dev'
+Requires-Dist: pytest ; extra == 'dev'
+Requires-Dist: pytest-cov ; extra == 'dev'
+Provides-Extra: opencv
+Requires-Dist: opencv-python-headless <5,>=4 ; extra == 'opencv'
+
+# april_vision
+
+A fiducial marker system used by Student Robotics.
+Uses [april tag](https://april.eecs.umich.edu/software/apriltag) markers to provide detection, pose and distance estimation for these markers.
+
+## Installation
+
+This library requires OpenCV but the default installation does not install OpenCV. There are a few different versions of OpenCV with different install sizes, to install the default package without OpenCV, run the following command.
+
+```bash
+pip install april-vision
+```
+
+To install the lightweight headless version OpenCV install the library with the following command.
+
+```bash
+pip install april-vision[opencv]
+```
+
+If you want to perform some of the more advanced features of the CLI (live view of the camera) you need the full version of OpenCV.
+The CLI dependecies can be installed with the following command.
+
+```bash
+pip install april-vision[cli]
+```
+
+Then the full version of OpenCV can then be installed with the following command.
+
+```bash
+pip install opencv-python>=4.8
+```
+
+All the versions of OpenCV (standard, headless and contrib) clash so you should only have one installed.
+
+## Example
+
+```python
+from april_vision.examples.camera import setup_cameras
+
+# Markers 0-100 are 80mm in size
+tag_sizes = {
+    range(0, 100): 80
+}
+
+# Returns a dict of index and camera
+cameras = setup_cameras(tag_sizes)
+
+if len(cameras) == 0:
+    print("No cameras found")
+
+for name, cam in cameras.items():
+    print(name)
+    print(cam.see())
+```
+
+## Tools
+
+When installed april_vision can be used on the command line providing the following list of useful tools. Each of the tools contain help text on correct usage accessed via the `-h` argument.
+
+```bash
+annotate_image
+annotate_video
+calibrate
+live
+marker_generator
+vision_debug
+tools
+    family_details
+    list_cameras
+```
