@@ -46,7 +46,7 @@ def look_for_any_marker():
 # Main code, tries to face a marker
 # marker = None
 
-code = {}
+code = set()
 
 # added colon
 while True:
