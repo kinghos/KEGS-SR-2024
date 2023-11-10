@@ -51,7 +51,7 @@ code = []
 # added colon
 while True:
     marker = look_for_any_marker()
-    if marker is not None:
+    if marker is not None and marker != []:
         print(marker)
         print(idkey[str(marker)])
         if idkey[str(marker)] != code[-1] or code == []:
