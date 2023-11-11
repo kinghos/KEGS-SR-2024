@@ -41,22 +41,24 @@ def look_for_any_marker():
     if len(markers) > 0:
         print("Found a marker!")
         return markers[0].id
-
+    return -1
 
 # Main code, tries to face a marker
-marker = None
+# marker = None
 
-code = []
+code = set()
 
 # added colon
 while True:
     marker = look_for_any_marker()
-    if marker is not None:
+    if marker != -1:
         print(marker)
         print(idkey[str(marker)])
-        if idkey[str(marker)] != code[-1] or code == []:
-            code.append(idkey[str(marker)])
-            print(code)
+        code.add(idkey[str(marker)])
+        
+        # if idkey[str(marker)] != code[-1] or code == []:
+        #     code.append(idkey[str(marker)])
+        print(code)
 
 
 
