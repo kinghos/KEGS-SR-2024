@@ -5,6 +5,7 @@ robot = Robot()
 asteroidid = [i for i in range(150, 200)]
 
 
+
 #stop the motors
 def brake():
     robot.motor_board.motors[0].power = 0
@@ -17,8 +18,9 @@ def mediumDrive():
 
 #drive backwards at x speed
 def backwardsDrive(speed):
-    robot.servo_board.servos[0].position = -1*speed
-    robot.servo_board.servos[1].position = -1*speed
+    robot.motor_board.motors[0].power = -1*speed
+    robot.motor_board.motors[1].power = -1*speed
+
 
 #clockwise is true
 #counter clockwise is false
@@ -70,7 +72,7 @@ def look(targetid):
     return None
 
 
-#turn counter clockwise until in line with target, slow turn to a degree of accuracy
+#turn counter-clockwise until in line with target, slow turn to a degree of accuracy
 def turnSee(target):
     #satisfy is the name of the temp variable i use for while loops, i will find a better way another time
     satisfy = False
@@ -112,6 +114,7 @@ def untilUnsee(target):
         moment = look(target.id)
         #if it doesnt see the target asteroid then stop and exit loop
         if  moment == None:
+            robot.sleep(0.1)
             brake()
             satisfy = True
         else:
@@ -143,7 +146,8 @@ def correctDrive(targetid, distance):
         if target == None:
             print('dont see')
             brake()
-            break
+            #break - just waits now, maybe put a turnSee
+            turnSee(targetid)
         #stop if it gets close to the ship
         elif target.position.distance < distance:
             brake()
@@ -158,14 +162,15 @@ def correctDrive(targetid, distance):
                 slowTurn(True)
                 robot.sleep(0.01)
                 print(target.position.horizontal_angle)
-            #drive at 0.3 power and print distance to marker
-            robot.sleep(0.1)
-            mediumDrive()
-            print(f'{target.position.distance}mm to {target.id}')
+            else:
+                #drive at 0.3 power and print distance to marker
+                robot.sleep(0.1)
+                mediumDrive()
+                print(f'{target.position.distance}mm to {target.id}')
 
 
 #choose asteroid, go to asteroid, go to base, go to spaceship, put asteroid in spaceship, repeat
-def maincycle():
+def maincycle(collected):
 
     #the middle of out base area's marker - if you are area 3 then your middle is 26
     mid = robot.zone * 7 + 3
@@ -219,8 +224,8 @@ def maincycle():
     robot.sleep(1)
 
     #grab box
-    robot.servo_board.servos[0].position = 1
-    robot.servo_board.servos[1].position = 1
+    robot.servo_board.servos[0].position = 0.6
+    robot.servo_board.servos[1].position = 0.6
 
     robot.sleep(1)
 
@@ -241,8 +246,6 @@ def maincycle():
     #go to spaceship
     turnSee(robot.zone+120)
 
-
-
     #drive forward
     mediumDrive()
 
@@ -250,29 +253,65 @@ def maincycle():
     print('finished correct driving')
 
     robot.sleep(0.2)
+
     #deposit into ship sequence
     print('raising')
     robot.servo_board.servos[2].position = 1
+
     robot.sleep(2)
-    print('release')
+
+    #drive a little forward
     robot.motor_board.motors[0].power = 0.2
     robot.motor_board.motors[1].power = 0.2
-    robot.sleep(1.7)
+
+    robot.sleep(1.6)
+
     brake()
-    print('going backwards')
-    backwardsDrive(1)
+
+    # effecient stacking
+    print(f'i have collected {collected} asteroids so far')
+    if collected % 2 == 0:
+        print('depositing to 1')
+        fastTurn(True)
+        robot.sleep(0.2)
+        brake()
+
+    else:
+        print('depositing to 2')
+        fastTurn(False)
+        robot.sleep(0.2)
+        brake()
+
+    #fully open pincers
+    print('release')
+    robot.servo_board.servos[0].position = -1
+    robot.servo_board.servos[1].position = -1
+
     robot.sleep(1)
-    robot.motor_board.motors[0].power = -0.3
-    robot.motor_board.motors[1].power = -0.3
+
+    collected += 1
+
+    backwardsDrive(0.5)
+
     robot.sleep(1)
+
     brake()
+
     robot.servo_board.servos[2].position = -0.2
+
     print('turning')
     fastTurn(False)
+
     robot.sleep(0.9)
+
+    return collected
+
 
 
 
 #just repeat forever - do things here for stuff such as contingencys or returning to base at time limit
+#collected is a variable that stores the number of times it has run the maincycle function
+#did this since you cant change global variables from within a function
+collected = 0
 while True:
-    maincycle()
+    collected = maincycle(collected)
