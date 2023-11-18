@@ -1,42 +1,49 @@
 from sr.robot3 import *
-
 robot = Robot()
 
-'''
-print('moving .5 power')
-robot.motor_board.motors[0].power = 0.4
-robot.motor_board.motors[1].power = 0.4
-# sleep for 2 second
-print('sleep 0.5s')
-robot.sleep(0.5)
-
-print('stop')
-robot.motor_board.motors[0].power = 0
-robot.motor_board.motors[1].power = 0
+#all marker ids of asteroids in an epic list
+asteroidid = [i for i in range(150, 200)]
 
 
-#roughly 20 degrees, once we get to image orientation, we'll use a markers yaw to determine how far we have come
-print('turning')
-robot.motor_board.motors[0].power = 0.1
-robot.motor_board.motors[1].power = -0.1
-robot.sleep(0.5)
-print('stop')
-robot.motor_board.motors[0].power = 0
-robot.motor_board.motors[1].power = 0
-'''
+#stop the motors
+def brake():
+    robot.motor_board.motors[0].power = 0
+    robot.motor_board.motors[1].power = 0
 
-#find a marker
-def firstSee():
-    listmarkers = robot.camera.see()
-    if len(listmarkers) > 0:
-        print(f'i see {listmarkers[0]} first')
-        return listmarkers[0]
+#drive at a stable pace
+def mediumDrive():
+    robot.motor_board.motors[0].power = 0.3
+    robot.motor_board.motors[1].power = 0.3
+
+#drive backwards at x speed
+def backwardsDrive(speed):
+    robot.servo_board.servos[0].position = -1*speed
+    robot.servo_board.servos[1].position = -1*speed
+
+#clockwise is true
+#counter clockwise is false
+#slow turning
+def slowTurn(leftright: bool):
+    if leftright == True:
+        robot.motor_board.motors[0].power = 0.01
+        robot.motor_board.motors[1].power = -0.01
+    else:
+        robot.motor_board.motors[0].power = -0.01
+        robot.motor_board.motors[1].power = 0.01
+
+#clockwise is true
+#counter clockwise is false
+#faster turning
+def fastTurn(leftright: bool):
+    if leftright == True:
+        robot.motor_board.motors[0].power = 0.1
+        robot.motor_board.motors[1].power = -0.1
+    else:
+        robot.motor_board.motors[0].power = -0.1
+        robot.motor_board.motors[1].power = 0.1
 
 
-asteroidid = [i for i in range(150, 199)]
-print(asteroidid)
-
-
+#look at all of the markers and only return those that are asteroids
 def firstAsteroid():
     asteroids = []
     listmarkers = robot.camera.see()
@@ -44,16 +51,13 @@ def firstAsteroid():
     for marker in listmarkers:
         if marker.id in asteroidid:
             asteroids.append(marker)
-
-    print(asteroids)
-    #doesnt seem to append at all even when there are asteroids
+    #print(f'i see asteroids: {asteroids}')
     if len(asteroids) > 0:
         print(f'i see {asteroids[0]} first')
         return asteroids[0]
     else:
         print('i dont see any asteroids')
         return None
-
 
 
 #find a desired target marker and return its information
@@ -65,252 +69,210 @@ def look(targetid):
     print(f'couldnt find {targetid}')
     return None
 
-def maincycle():
 
-    mid= robot.zone * 7 + 3
-    firstseen = firstAsteroid()
-    print(firstseen)
-    while firstseen == None:
-        robot.motor_board.motors[0].power = -0.1
-        robot.motor_board.motors[1].power = 0.1
-        robot.sleep(0.1)
-        firstseen = firstAsteroid()
-
-
+#turn counter clockwise until in line with target, slow turn to a degree of accuracy
+def turnSee(target):
+    #satisfy is the name of the temp variable i use for while loops, i will find a better way another time
     satisfy = False
-    robot.arduino.pins[4].mode = OUTPUT
-    robot.arduino.pins[4].digital_write(True)
-    robot.sleep(0.5)
+
+    robot.sleep(0.01)
+
     while satisfy == False:
-        if look(firstseen.id) == None:
-            robot.motor_board.motors[0].power = -0.1
-            robot.motor_board.motors[1].power = 0.1
+
+        #if it doesnt see the target than it will turn counter-clockwise until it does
+        looktarget = look(target)
+
+        if looktarget == None:
+            fastTurn(False)
             robot.sleep(0.1)
-        elif look(firstseen.id).position.horizontal_angle < -0.1:
-            robot.motor_board.motors[0].power = -0.01
-            robot.motor_board.motors[1].power = 0.01
+        #next 2 elifs are for turning until within a certain angle of accuracy
+        elif looktarget.position.horizontal_angle < -0.1:
+            slowTurn(False)
             robot.sleep(0.001)
-            print(look(firstseen.id).position.horizontal_angle)
-        elif look(firstseen.id).position.horizontal_angle > 0.1:
-            robot.motor_board.motors[0].power = 0.01
-            robot.motor_board.motors[1].power = -0.01
+            print(looktarget.position.horizontal_angle)
+        elif looktarget.position.horizontal_angle > 0.1:
+            slowTurn(True)
             robot.sleep(0.001)
-            print(look(firstseen.id).position.horizontal_angle)
+            print(looktarget.position.horizontal_angle)
+        #is now facing the target, stop turning and end loop
         else:
-            print(look(firstseen.id).position.horizontal_angle)
-            print(f'facing target ({firstseen.id})')
-            robot.motor_board.motors[0].power = 0
-            robot.motor_board.motors[1].power = 0
+            print(looktarget.position.horizontal_angle)
+            print(f'facing target ({target})')
+            brake()
             satisfy = True
-    robot.arduino.pins[4].digital_write(False)
+
+
+def untilUnsee(target):
+    print('untilunsee')
+    # reset the silly loop condition
     satisfy = False
-    robot.motor_board.motors[0].power = 0.3
-    robot.motor_board.motors[1].power = 0.3
-
-
-
+    #epic loop condition
     while satisfy == False:
-        moment = look(firstseen.id)
+        #set target asteroid information to temp variable, in case it cannot see it later
+        moment = look(target.id)
+        #if it doesnt see the target asteroid then stop and exit loop
         if  moment == None:
-            robot.motor_board.motors[0].power = 0
-            robot.motor_board.motors[1].power = 0
+            brake()
             satisfy = True
         else:
+            #keep moving
             robot.sleep(0.1)
+            #course correction
             if moment.position.horizontal_angle < -0.1:
-                robot.motor_board.motors[0].power = -0.01
-                robot.motor_board.motors[1].power = 0.01
+                slowTurn(False)
                 robot.sleep(0.01)
                 print(moment.position.horizontal_angle)
             elif moment.position.horizontal_angle > 0.1:
-                robot.motor_board.motors[0].power = 0.01
-                robot.motor_board.motors[1].power = -0.01
+                slowTurn(True)
                 robot.sleep(0.01)
                 print(moment.position.horizontal_angle)
             else:
+                #keep going at 0.3 power and print current angle
                 print(moment.position.horizontal_angle)
-                print(f'facing target ({firstseen.id})')
-                robot.motor_board.motors[0].power = 0.3
-                robot.motor_board.motors[1].power = 0.3
+                print(f'facing target ({moment.id})')
+                mediumDrive()
+
+
+def correctDrive(targetid, distance):
+    # reset funny loop condition
+    satisfy = False
+    while satisfy == False:
+        #set target marker (ship) information to temp variable, in case it cannot see it later
+        target = look(targetid)
+        #if it doesnt see the marker than just break out, better to muck up once than to have an error and just obliterate the whole robot
+        if target == None:
+            print('dont see')
+            brake()
+            break
+        #stop if it gets close to the ship
+        elif target.position.distance < distance:
+            brake()
+            satisfy = True
+        else:
+            #course correction
+            if target.position.horizontal_angle < -0.1:
+                slowTurn(False)
+                robot.sleep(0.01)
+                print(target.position.horizontal_angle)
+            elif target.position.horizontal_angle > 0.1:
+                slowTurn(True)
+                robot.sleep(0.01)
+                print(target.position.horizontal_angle)
+            #drive at 0.3 power and print distance to marker
+            robot.sleep(0.1)
+            mediumDrive()
+            print(f'{target.position.distance}mm to {target.id}')
+
+
+#choose asteroid, go to asteroid, go to base, go to spaceship, put asteroid in spaceship, repeat
+def maincycle():
+
+    #the middle of out base area's marker - if you are area 3 then your middle is 26
+    mid = robot.zone * 7 + 3
+
+    #lift up the forklift a bit to ensure no collision with raised platform/other boxes
+    robot.servo_board.servos[2].position = -0.2
+
+    #set a target asteroid to pick up
+    firstasteroid = firstAsteroid()
+
+
+    #if it didnt see an asteroid, it will turn counter-clockwise until it does and set that as its target
+    while firstasteroid == None:
+        print('I did not see an asteroid to target')
+        slowTurn(False)
+        robot.sleep(0.1)
+        firstasteroid = firstAsteroid()
+    print(f'I have set {firstasteroid.id} as the target asteroid')
+    print(f'The target asteroid has these stats: {firstasteroid}')
+
+    #turn until it is in line with the target asteroid
+    turnSee(firstasteroid.id)
+
+    #move forward
+    mediumDrive()
+
+    #drive forward until no longer able to see asteroid
+    untilUnsee(firstasteroid)
+
     robot.sleep(0.5)
+
+    #read distance to sensor using s o n a r woah
     robot.arduino.pins[A4].mode = INPUT
     distance_to_closest_from_grabber = robot.arduino.pins[A4].analog_read()
+
     print(f'{distance_to_closest_from_grabber}m from sensor')
     #sometimes this reads 5m even though the box is right in front of it :shrug:
-    if distance_to_closest_from_grabber > 0.5:
-        robot.arduino.pins[3].mode = OUTPUT
-        robot.arduino.pins[3].digital_write(True)
+    #no clue why
+
+    if distance_to_closest_from_grabber == 0.5:
+        print('distance is 5m')
         robot.sleep(0.01)
 
     #grab code
+    #should make these numbers a little smaller since it will squish the box to death
+    #it goes from -1 to 1 btw
+    #could make effecient box stacking by moving from side to side so that it doesnt overflow so easily
+    #lower forklift
+    robot.servo_board.servos[2].position = -1
+
+    robot.sleep(1)
+
+    #grab box
     robot.servo_board.servos[0].position = 1
     robot.servo_board.servos[1].position = 1
+
     robot.sleep(1)
-    robot.servo_board.servos[2].position = -0.5
+
+    #lift up with forklift a bit
+    robot.servo_board.servos[2].position = -0.2
 
     robot.sleep(2)
 
-    #go home
-    satisfy = False
-    while satisfy == False:
-        moment3 = look(mid)
-        if moment3 == None:
-            robot.motor_board.motors[0].power = -0.1
-            robot.motor_board.motors[1].power = 0.1
-            robot.sleep(0.1)
-            print('dont see')
-        elif moment3.position.horizontal_angle < -0.1:
-            robot.motor_board.motors[0].power = -0.01
-            robot.motor_board.motors[1].power = 0.01
-            robot.sleep(0.01)
-            print(moment3.position.horizontal_angle)
-        elif moment3.position.horizontal_angle > 0.1:
-            robot.motor_board.motors[0].power = 0.01
-            robot.motor_board.motors[1].power = -0.01
-            robot.sleep(0.01)
-            print(moment3.position.horizontal_angle)
-        else:
-            print(moment3.position.horizontal_angle)
-            print(f'facing target ({mid})')
-            midpoint = moment3
-            robot.motor_board.motors[0].power = 0
-            robot.motor_board.motors[1].power = 0
-            satisfy = True
-    robot.arduino.pins[4].digital_write(False)
-    satisfy = False
-    robot.motor_board.motors[0].power = 0.3
-    robot.motor_board.motors[1].power = 0.3
-    while satisfy == False:
-        moment2 = look(mid)
-        if moment2 == None:
-            print('dont see')
-            break
-        elif moment2.position.distance < 500:
-            robot.motor_board.motors[0].power = 0
-            robot.motor_board.motors[1].power = 0
-            satisfy = True
-        else:
-            robot.sleep(0.5)
-            print(f'{moment2.position.distance}mm to mid')
+    turnSee(mid)
+
+    print('going to mid')
+    correctDrive(mid, 500)
+
     robot.sleep(0.5)
 
+    print('going to spaceship')
+
     #go to spaceship
-    satisfy = False
-    while satisfy == False:
-        moment5 = look(robot.zone + 120)
-        if moment5 == None:
-            robot.motor_board.motors[0].power = -0.1
-            robot.motor_board.motors[1].power = 0.1
-            robot.sleep(0.1)
-            print('dont see')
-        elif moment5.position.horizontal_angle < -0.1:
-            robot.motor_board.motors[0].power = -0.01
-            robot.motor_board.motors[1].power = 0.01
-            robot.sleep(0.01)
-            print(moment5.position.horizontal_angle)
-        elif moment5.position.horizontal_angle > 0.1:
-            robot.motor_board.motors[0].power = 0.01
-            robot.motor_board.motors[1].power = -0.01
-            robot.sleep(0.01)
-            print(moment5.position.horizontal_angle)
-        else:
-            print(moment5.position.horizontal_angle)
-            print(f'facing target ({robot.zone + 120})')
-            midpoint = moment5
-            robot.motor_board.motors[0].power = 0
-            robot.motor_board.motors[1].power = 0
-            satisfy = True
-    robot.arduino.pins[4].digital_write(False)
-    satisfy = False
-    robot.motor_board.motors[0].power = 0.3
-    robot.motor_board.motors[1].power = 0.3
-    while satisfy == False:
-        moment5 = look(robot.zone + 120)
-        if moment5 == None:
-            print('dont see')
-            break
-        elif moment5.position.distance < 600:
-            robot.motor_board.motors[0].power = 0
-            robot.motor_board.motors[1].power = 0
-            satisfy = True
-        else:
-            if moment5.position.horizontal_angle < -0.1:
-                robot.motor_board.motors[0].power = -0.01
-                robot.motor_board.motors[1].power = 0.01
-                robot.sleep(0.01)
-                print(moment5.position.horizontal_angle)
-            elif moment5.position.horizontal_angle > 0.1:
-                robot.motor_board.motors[0].power = 0.01
-                robot.motor_board.motors[1].power = -0.01
-                robot.sleep(0.01)
-                print(moment5.position.horizontal_angle)
-            robot.sleep(0.1)
-            robot.motor_board.motors[0].power = 0.3
-            robot.motor_board.motors[1].power = 0.3
-            print(f'{moment5.position.distance}mm to {moment5.id}')
+    turnSee(robot.zone+120)
+
+
+
+    #drive forward
+    mediumDrive()
+
+    correctDrive(robot.zone + 120, 600)
+    print('finished correct driving')
+
     robot.sleep(0.2)
+    #deposit into ship sequence
     print('raising')
     robot.servo_board.servos[2].position = 1
     robot.sleep(2)
+    print('release')
     robot.motor_board.motors[0].power = 0.2
     robot.motor_board.motors[1].power = 0.2
     robot.sleep(1.7)
-    robot.motor_board.motors[0].power = 0
-    robot.motor_board.motors[1].power = 0
-    robot.servo_board.servos[0].position = -1
-    robot.servo_board.servos[1].position = -1
+    brake()
+    print('going backwards')
+    backwardsDrive(1)
     robot.sleep(1)
     robot.motor_board.motors[0].power = -0.3
     robot.motor_board.motors[1].power = -0.3
     robot.sleep(1)
-    robot.motor_board.motors[0].power = 0
-    robot.motor_board.motors[1].power = 0
-    robot.servo_board.servos[2].position = -1
+    brake()
+    robot.servo_board.servos[2].position = -0.2
     print('turning')
-    robot.motor_board.motors[0].power = -0.1
-    robot.motor_board.motors[1].power = 0.1
+    fastTurn(False)
     robot.sleep(0.9)
 
 
 
-
-    '''print('moving 0.4 power')
-    robot.motor_board.motors[0].power = 0.4
-    robot.motor_board.motors[1].power = 0.4
-    robot.sleep(0.5)
-    robot.motor_board.motors[0].power = 0
-    robot.motor_board.motors[1].power = 0
-    print('turning')
-    robot.motor_board.motors[0].power = 0.1
-    robot.motor_board.motors[1].power = -0.1
-    robot.sleep(0.9)
-    robot.motor_board.motors[0].power = 0
-    robot.motor_board.motors[1].power = 0
-    print('releasing')
-    robot.servo_board.servos[2].position = -1
-    robot.sleep(2)
-    robot.servo_board.servos[0].position = -1
-    robot.servo_board.servos[1].position = -1
-    robot.sleep(1)
-    print('moving -0.4 power')
-    robot.motor_board.motors[0].power = -0.4
-    robot.motor_board.motors[1].power = -0.4
-    robot.sleep(0.5)
-    robot.motor_board.motors[0].power = 0
-    robot.motor_board.motors[1].power = 0
-    print('turning')
-    robot.motor_board.motors[0].power = -0.1
-    robot.motor_board.motors[1].power = 0.1
-    robot.sleep(0.9)
-    robot.motor_board.motors[0].power = 0
-    robot.motor_board.motors[1].power = 0
-    print('moving 0.4 power')
-    robot.motor_board.motors[0].power = 0.4
-    robot.motor_board.motors[1].power = 0.4
-    robot.sleep(1)
-    robot.motor_board.motors[0].power = 0
-    robot.motor_board.motors[1].power = 0'''
-
-
+#just repeat forever - do things here for stuff such as contingencys or returning to base at time limit
 while True:
     maincycle()
