@@ -21,17 +21,16 @@ def backwardsDrive(speed):
     robot.motor_board.motors[0].power = -1*speed
     robot.motor_board.motors[1].power = -1*speed
 
-
 #clockwise is true
 #counter clockwise is false
 #slow turning
 def slowTurn(leftright: bool):
     if leftright == True:
-        robot.motor_board.motors[0].power = 0.01
-        robot.motor_board.motors[1].power = -0.01
+        robot.motor_board.motors[0].power = 0.05
+        robot.motor_board.motors[1].power = -0.05
     else:
-        robot.motor_board.motors[0].power = -0.01
-        robot.motor_board.motors[1].power = 0.01
+        robot.motor_board.motors[0].power = -0.05
+        robot.motor_board.motors[1].power = 0.05
 
 #clockwise is true
 #counter clockwise is false
@@ -138,6 +137,7 @@ def untilUnsee(target):
 
 def correctDrive(targetid, distance):
     # reset funny loop condition
+    lowered = False
     satisfy = False
     while satisfy == False:
         #set target marker (ship) information to temp variable, in case it cannot see it later
@@ -152,15 +152,22 @@ def correctDrive(targetid, distance):
         elif target.position.distance < distance:
             brake()
             satisfy = True
+        # lower down the forklift in case it gets too close to see over the box potentially
+        elif target.position.distance < distance + 200 and lowered == False:
+            robot.servo_board.servos[2].position = -0.4
+            brake()
+            robot.sleep(0.5)
+            lowered = True
+            mediumDrive()
         else:
             #course correction
             if target.position.horizontal_angle < -0.1:
                 slowTurn(False)
-                robot.sleep(0.01)
+                robot.sleep(0.05)
                 print(target.position.horizontal_angle)
             elif target.position.horizontal_angle > 0.1:
                 slowTurn(True)
-                robot.sleep(0.01)
+                robot.sleep(0.05)
                 print(target.position.horizontal_angle)
             else:
                 #drive at 0.3 power and print distance to marker
@@ -170,7 +177,7 @@ def correctDrive(targetid, distance):
 
 
 #choose asteroid, go to asteroid, go to base, go to spaceship, put asteroid in spaceship, repeat
-def maincycle(collected):
+def maincycle():
 
     #the middle of out base area's marker - if you are area 3 then your middle is 26
     mid = robot.zone * 7 + 3
@@ -221,7 +228,7 @@ def maincycle(collected):
     #lower forklift
     robot.servo_board.servos[2].position = -1
 
-    robot.sleep(1)
+    robot.sleep(1.2)
 
     #grab box
     robot.servo_board.servos[0].position = 0.6
@@ -238,6 +245,8 @@ def maincycle(collected):
 
     print('going to mid')
     correctDrive(mid, 500)
+
+    robot.servo_board.servos[2].position = -0.4
 
     robot.sleep(0.5)
 
@@ -273,7 +282,7 @@ def maincycle(collected):
     if collected % 2 == 0:
         print('depositing to 1')
         fastTurn(True)
-        robot.sleep(0.2)
+        robot.sleep(0.15)
         brake()
 
     else:
@@ -288,8 +297,6 @@ def maincycle(collected):
     robot.servo_board.servos[1].position = -1
 
     robot.sleep(1)
-
-    collected += 1
 
     backwardsDrive(0.5)
 
@@ -307,11 +314,10 @@ def maincycle(collected):
     return collected
 
 
-
-
 #just repeat forever - do things here for stuff such as contingencys or returning to base at time limit
 #collected is a variable that stores the number of times it has run the maincycle function
 #did this since you cant change global variables from within a function
 collected = 0
 while True:
-    collected = maincycle(collected)
+    collected = maincycle()
+    collected += 1
