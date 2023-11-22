@@ -1,4 +1,4 @@
-'''Autonomously demonstrate, using the LEDs on the Brain Board, awareness of its position relative to an arena wall marker.
+"""Autonomously demonstrate, using the LEDs on the Brain Board, awareness of its position relative to an arena wall marker.
 Facing the wall at a point between 1 and 3 metres out from the wall and directly in front of the middle of the marker:
 
 turn on the spot illuminating LEDs to indicate the orientation of the robot:
@@ -13,7 +13,7 @@ move left and right illuminating LEDs to indicate the position of the robot rela
 
 The robot may move autonomously or may be moved manually to complete this challenge.
 Note: if moving the robot manually then the Arduino, Motor and Servo Boards must be disconnected
-from the Power Board as well as any mechanical components secured for the duration of the demonstration.'''
+from the Power Board as well as any mechanical components secured for the duration of the demonstration."""
 
 import math
 from sr.robot3 import *
@@ -36,27 +36,39 @@ while True:
     robot.kch.leds[LED_B].colour = Colour.OFF
     robot.kch.leds[LED_C].colour = Colour.OFF
 
+    robot.camera.save(robot.usbkey / "vision_challenge.jpg")
+    #wanted to put it into
+    #D:\vision camera
+
     #camera.see for target marker and return info
     current = look(wallmarker)
     print(current)
 
-    #if angle then make x led yellow
-    if current.position.horizontal_angle > (15/360)*2:
-        robot.kch.leds[LED_A].colour = Colour.YELLOW
-    elif current.position.horizontal_angle < -(15/360)*2:
-        robot.kch.leds[LED_C].colour = Colour.YELLOW
-    else:
-        robot.kch.leds[LED_B].colour = Colour.YELLOW
+    if current:
 
-    robot.sleep(0.01)
+        #if angle then make x led yellow
+        if current.position.horizontal_angle > (15/360)*2*math.pi:
+            robot.kch.leds[LED_A].colour = Colour.YELLOW
+            print('angle left')
+        elif current.position.horizontal_angle < -(15/360)*2*math.pi:
+            robot.kch.leds[LED_C].colour = Colour.YELLOW
+            print('angle right')
+        else:
+            robot.kch.leds[LED_B].colour = Colour.YELLOW
+            print('angle mid')
 
-    parallelDistance = math.cos(current.position.horizontal_angle)*current.position.distance
-    if parallelDistance > 200:
-        robot.kch.leds[LED_A].colour = Colour.BLUE
-    elif parallelDistance < -200:
-        robot.kch.leds[LED_C].colour = Colour.BLUE
-    else:
-        robot.kch.leds[LED_C].colour = Colour.BLUE
+        robot.sleep(0.01)
 
-    robot.sleep(0.01)
+        parallelDistance = math.cos(current.position.horizontal_angle)*current.position.distance
+        if parallelDistance < -200:
+            robot.kch.leds[LED_A].colour = Colour.BLUE
+            print('position left')
+        elif parallelDistance > 200:
+            robot.kch.leds[LED_C].colour = Colour.BLUE
+            print('position right')
+        else:
+            robot.kch.leds[LED_B].colour = Colour.BLUE
+            print('position mid')
+
+        robot.sleep(0.01)
 
