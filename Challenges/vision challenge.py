@@ -29,14 +29,15 @@ def look(targetid):
             return marker
     print(f'couldnt find {targetid}')
     return None
-
+cycle = 0
 while True:
+    cycle += 1
     #reset led colours
     robot.kch.leds[LED_A].colour = Colour.OFF
     robot.kch.leds[LED_B].colour = Colour.OFF
     robot.kch.leds[LED_C].colour = Colour.OFF
 
-    robot.camera.save(robot.usbkey / "vision_challenge.jpg")
+    robot.camera.save(robot.usbkey / f"vision_challenge{cycle}.jpg")
     #wanted to put it into
     #D:\vision camera
 
