@@ -37,7 +37,8 @@ while True:
     robot.kch.leds[LED_B].colour = Colour.OFF
     robot.kch.leds[LED_C].colour = Colour.OFF
 
-    robot.camera.save(robot.usbkey / f"vision_challenge{cycle}.jpg")
+    robot.camera.save(robot.usbkey / f"/vision camera/vision_challenge{cycle}.jpg")
+    arr = robot.camera.capture()
     #wanted to put it into
     #D:\vision camera
 
@@ -58,18 +59,19 @@ while True:
             robot.kch.leds[LED_B].colour = Colour.YELLOW
             print('angle mid')
 
-        robot.sleep(0.01)
+        robot.sleep(0.2)
 
-        parallelDistance = math.cos(current.position.horizontal_angle)*current.position.distance
+        parallelDistance = math.sin(current.position.horizontal_angle)*current.position.distance
+        print(f'parallel distance {parallelDistance}')
         if parallelDistance < -200:
-            robot.kch.leds[LED_A].colour = Colour.BLUE
-            print('position left')
-        elif parallelDistance > 200:
             robot.kch.leds[LED_C].colour = Colour.BLUE
             print('position right')
+        elif parallelDistance > 200:
+            robot.kch.leds[LED_A].colour = Colour.BLUE
+            print('position left')
         else:
             robot.kch.leds[LED_B].colour = Colour.BLUE
             print('position mid')
 
-        robot.sleep(0.01)
+        robot.sleep(0.2)
 
