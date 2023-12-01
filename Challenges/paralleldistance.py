@@ -48,7 +48,7 @@ while True:
 
     if current:
         # parallelDistance = math.sin(current.position.horizontal_angle)*current.position.distance
-        parallelDistance = math.sin(math.pi - current.position.horizontal_angle) * current.position.distance
+        parallelDistance = math.sin(current.position.horizontal_angle) * current.position.distance
         print(f'parallel distance {parallelDistance}')
         if parallelDistance < -200:
             robot.kch.leds[LED_C].colour = Colour.BLUE
