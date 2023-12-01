@@ -19,7 +19,7 @@ import math
 from sr.robot3 import *
 robot = Robot()
 
-wallmarker = 180
+wallmarker = 0
 
 #find a desired target marker and return its information
 def look(targetid):
