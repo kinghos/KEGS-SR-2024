@@ -47,12 +47,18 @@ while True:
         #if angle then make x led yellow
         if current.position.horizontal_angle > (15/360)*2*math.pi:
             robot.kch.leds[LED_A].colour = Colour.YELLOW
+            robot.kch.leds[LED_B].colour = Colour.OFF
+            robot.kch.leds[LED_C].colour = Colour.OFF
             print('angle left')
         elif current.position.horizontal_angle < -(15/360)*2*math.pi:
             robot.kch.leds[LED_C].colour = Colour.YELLOW
+            robot.kch.leds[LED_A].colour = Colour.OFF
+            robot.kch.leds[LED_B].colour = Colour.OFF
             print('angle right')
         else:
             robot.kch.leds[LED_B].colour = Colour.YELLOW
+            robot.kch.leds[LED_A].colour = Colour.OFF
+            robot.kch.leds[LED_C].colour = Colour.OFF
             print('angle mid')
 
         robot.sleep(0.1)
