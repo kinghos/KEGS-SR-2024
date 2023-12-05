@@ -47,12 +47,18 @@ while True:
         print(f'parallel distance {parallelDistance}')
         if parallelDistance < -200:
             robot.kch.leds[LED_C].colour = Colour.BLUE
+            robot.kch.leds[LED_A].colour = Colour.OFF
+            robot.kch.leds[LED_B].colour = Colour.OFF
             print('position right')
         elif parallelDistance > 200:
             robot.kch.leds[LED_A].colour = Colour.BLUE
+            robot.kch.leds[LED_B].colour = Colour.OFF
+            robot.kch.leds[LED_C].colour = Colour.OFF
             print('position left')
         else:
             robot.kch.leds[LED_B].colour = Colour.YELLOW
+            robot.kch.leds[LED_A].colour = Colour.OFF
+            robot.kch.leds[LED_C].colour = Colour.OFF
             print('position mid')
 
         robot.sleep(0.1)
