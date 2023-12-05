@@ -32,10 +32,6 @@ def look(targetid):
 cycle = 0
 while True:
     cycle += 1
-    #reset led colours
-    robot.kch.leds[LED_A].colour = Colour.OFF
-    robot.kch.leds[LED_B].colour = Colour.OFF
-    robot.kch.leds[LED_C].colour = Colour.OFF
 
     robot.camera.save(robot.usbkey / f"/vision camera/vision_challenge{cycle}.jpg")
     arr = robot.camera.capture()
