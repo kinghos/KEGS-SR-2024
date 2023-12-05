@@ -57,7 +57,7 @@ while True:
             robot.kch.leds[LED_A].colour = Colour.BLUE
             print('position left')
         else:
-            robot.kch.leds[LED_B].colour = Colour.BLUE
+            robot.kch.leds[LED_B].colour = Colour.YELLOW
             print('position mid')
 
         robot.sleep(0.1)
