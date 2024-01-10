@@ -10,13 +10,13 @@ ENCODER_CYCLE = (2 * math.pi) / 11
 pins[2].mode = INPUT
 pins[3].mode = INPUT
 
+# sequence: AB (A is MSB, B is LSB)
 sequence = [
     "01",
     "00",
     "10",
     "11"
 ]
-
 
 def encoderLoop():
     on_short_side = True
@@ -41,17 +41,21 @@ def encoderLoop():
             encoderB = str(int(pins[3].digital_read()))
             bin_str = encoderA + encoderB
             str_idx = sequence.index(bin_str)
+            print(f"BINSTR: {bin_str}\t IDX: {str_idx}")
             print(f"Current encoder: {bin_str}\n")#Prev encoder: {prev_seq}")
 
             # Checks to see if the new binary string read follows the previous reading in the sequence, going clockwise
             if str_idx == -1:
-                print("String not found in sequence‼️‼️")
+                print("String not found in sequence!!!!")
             elif (prev_seq != bin_str) and ((str_idx == (seq_pos + 1) % 4) or (str_idx == (seq_pos - 1) % 4)):
+                print("Prev & Current pos match!!!!")
                 degrees_rotated += ENCODER_CYCLE
+                print(f"Degrees rotated: {degrees_rotated}")
                 seq_pos += 1
                 seq_pos = seq_pos % 4
                 prev_seq = bin_str
-
+            else:
+                print(f"Position not matched!!!!")
 
             if degrees_rotated == 2 * math.pi:
                 cycles += 1
