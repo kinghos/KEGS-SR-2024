@@ -31,11 +31,11 @@ def encoderLoop():
         # Reads initial encoder position as a binary string
         prev_seq = str(int(pins[2].digital_read())) + str(int(pins[3].digital_read()))
         seq_pos = sequence.index(prev_seq)
-        degrees_rotated = 0
+        rad_rotated = 0
 
         while not turning:
-            mts[0].power = 0.5
-            mts[1].power = 0.5
+            mts[0].power = 0.1
+            mts[1].power = 0.1
 
             encoderA = str(int(pins[2].digital_read()))
             encoderB = str(int(pins[3].digital_read()))
@@ -48,25 +48,15 @@ def encoderLoop():
             if str_idx == -1:
                 print("String not found in sequence!!!!")
             else:
-                degrees_rotated += ENCODER_CYCLE * abs(str_idx - seq_pos)
-                print(f"Degrees rotated: {degrees_rotated}")
+                rad_rotated += ENCODER_CYCLE * abs(str_idx - seq_pos)
+                print(f"Rad rotated: {rad_rotated}")
                 seq_pos = str_idx
                 prev_seq = bin_str
-            #elif (prev_seq != bin_str) and ((str_idx == (seq_pos + 1) % 4) or (str_idx == (seq_pos - 1) % 4)):
-            #    print("Prev & Current pos match!!!!")
-            #    degrees_rotated += ENCODER_CYCLE
-            #    print(f"Degrees rotated: {degrees_rotated}")
-            #    seq_pos += 1
-            #    seq_pos = seq_pos % 4
-            #    prev_seq = bin_str
-            #else:
-            #    print(f"Position not matched!!!!")
 
-            #if degrees_rotated == 2 * math.pi:
-            if degrees_rotated == 360:
+            if rad_rotated % 2 * math.pi == 0: # rad_rotated = kπ, k ∈ ℤ
                 cycles += 1
                 print(f'1{cycles} cycles')
-                print(f'{degrees_rotated} degrees rotated')
+                #print(f'{rad_rotated} rad rotated')
 
             if cycles == 4 and on_short_side:
                 on_short_side = False
