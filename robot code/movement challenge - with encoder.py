@@ -62,7 +62,8 @@ def encoderLoop():
             #else:
             #    print(f"Position not matched!!!!")
 
-            if degrees_rotated == 2 * math.pi:
+            #if degrees_rotated == 2 * math.pi:
+            if degrees_rotated == 360:
                 cycles += 1
                 print(f'1{cycles} cycles')
                 print(f'{degrees_rotated} degrees rotated')
