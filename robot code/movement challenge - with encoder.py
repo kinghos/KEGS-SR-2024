@@ -26,7 +26,7 @@ def encoderLoop():
 
         # With 80mm wheels, there are 4 full cycles in 1000mm, and 6 full cycles in 1500mm
         cycles = 0
-
+        counts = 0
 
         # Reads initial encoder position as a binary string
         prev_seq = str(int(pins[2].digital_read())) + str(int(pins[3].digital_read()))
@@ -44,7 +44,7 @@ def encoderLoop():
             #print(f"BINSTR: {bin_str}\t IDX: {str_idx}")
             #print(f"Current encoder: {bin_str}\n")#Prev encoder: {prev_seq}")
 
-            counts = 0
+
 
             # Checks to see if the new binary string read follows the previous reading in the sequence, going clockwise
             if str_idx == -1:
@@ -53,7 +53,7 @@ def encoderLoop():
                 counts += abs(str_idx - seq_pos)
                 print(counts)
                 rad_rotated += ENCODER_CYCLE * abs(str_idx - seq_pos)
-                #print(f"Rad rotated: {rad_rotated}")
+                print(f"Rad rotated: {rad_rotated}")
                 seq_pos = str_idx
                 prev_seq = bin_str
 
