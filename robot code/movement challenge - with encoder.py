@@ -44,12 +44,16 @@ def encoderLoop():
             #print(f"BINSTR: {bin_str}\t IDX: {str_idx}")
             #print(f"Current encoder: {bin_str}\n")#Prev encoder: {prev_seq}")
 
+            counts = 0
+
             # Checks to see if the new binary string read follows the previous reading in the sequence, going clockwise
             if str_idx == -1:
                 print("String not found in sequence!!!!")
             else:
+                counts += abs(str_idx - seq_pos)
+                print(counts)
                 rad_rotated += ENCODER_CYCLE * abs(str_idx - seq_pos)
-                print(f"Rad rotated: {rad_rotated}")
+                #print(f"Rad rotated: {rad_rotated}")
                 seq_pos = str_idx
                 prev_seq = bin_str
 
