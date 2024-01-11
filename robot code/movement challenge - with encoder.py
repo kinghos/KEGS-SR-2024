@@ -34,15 +34,15 @@ def encoderLoop():
         degrees_rotated = 0
 
         while not turning:
-            mts[0].power = 0.1
-            mts[1].power = 0.1
+            mts[0].power = 0.5
+            mts[1].power = 0.5
 
             encoderA = str(int(pins[2].digital_read()))
             encoderB = str(int(pins[3].digital_read()))
             bin_str = encoderA + encoderB
             str_idx = sequence.index(bin_str)
-            print(f"BINSTR: {bin_str}\t IDX: {str_idx}")
-            print(f"Current encoder: {bin_str}\n")#Prev encoder: {prev_seq}")
+            #print(f"BINSTR: {bin_str}\t IDX: {str_idx}")
+            #print(f"Current encoder: {bin_str}\n")#Prev encoder: {prev_seq}")
 
             # Checks to see if the new binary string read follows the previous reading in the sequence, going clockwise
             if str_idx == -1:
@@ -74,7 +74,8 @@ def encoderLoop():
                 on_short_side = True
                 turning = True
 
-            robot.sleep(0.1)
+            #robot.sleep(0.1) # - why is this here
+        print("LOOP EXITED-----------------------------------------------------------------------------")
 
         mts[0].power = 0
         mts[1].power = 0
