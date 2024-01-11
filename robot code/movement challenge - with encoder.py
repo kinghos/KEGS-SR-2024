@@ -47,15 +47,20 @@ def encoderLoop():
             # Checks to see if the new binary string read follows the previous reading in the sequence, going clockwise
             if str_idx == -1:
                 print("String not found in sequence!!!!")
-            elif (prev_seq != bin_str) and ((str_idx == (seq_pos + 1) % 4) or (str_idx == (seq_pos - 1) % 4)):
-                print("Prev & Current pos match!!!!")
-                degrees_rotated += ENCODER_CYCLE
-                print(f"Degrees rotated: {degrees_rotated}")
-                seq_pos += 1
-                seq_pos = seq_pos % 4
-                prev_seq = bin_str
             else:
-                print(f"Position not matched!!!!")
+                degrees_rotated += ENCODER_CYCLE * abs(str_idx - seq_pos)
+                print(f"Degrees rotated: {degrees_rotated}")
+                seq_pos = str_idx
+                prev_seq = bin_str
+            #elif (prev_seq != bin_str) and ((str_idx == (seq_pos + 1) % 4) or (str_idx == (seq_pos - 1) % 4)):
+            #    print("Prev & Current pos match!!!!")
+            #    degrees_rotated += ENCODER_CYCLE
+            #    print(f"Degrees rotated: {degrees_rotated}")
+            #    seq_pos += 1
+            #    seq_pos = seq_pos % 4
+            #    prev_seq = bin_str
+            #else:
+            #    print(f"Position not matched!!!!")
 
             if degrees_rotated == 2 * math.pi:
                 cycles += 1
