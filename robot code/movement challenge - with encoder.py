@@ -60,8 +60,8 @@ def encoderLoop():
             if rad_rotated >= 2 * math.pi:
                 cycles += 1
                 rad_rotated = 0
-                print(f'1{cycles} cycles')
-                #print(f'{rad_rotated} rad rotated')
+                print(f'Cycle completed. {cycles} cycles')
+                print(f'\t{rad_rotated} rad rotated')
 
             if cycles == 4 and on_short_side:
                 on_short_side = False
