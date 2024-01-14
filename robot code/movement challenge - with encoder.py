@@ -6,7 +6,7 @@ mts = robot.motor_board.motors
 pins = robot.arduino.pins
 
 
-ENCODER_CYCLE = (2 * math.pi) / (2 * 374)
+ENCODER_CYCLE = (math.pi) / (34)
 pins[2].mode = INPUT
 pins[3].mode = INPUT
 
@@ -26,7 +26,7 @@ def encoderLoop():
 
         # With 80mm wheels, there are 4 full cycles in 1000mm, and 6 full cycles in 1500mm
         cycles = 0
-        counts = 0
+        #counts = 0
 
         # Reads initial encoder position as a binary string
         prev_seq = str(int(pins[2].digital_read())) + str(int(pins[3].digital_read()))
@@ -50,8 +50,8 @@ def encoderLoop():
             if str_idx == -1:
                 print("String not found in sequence!!!!")
             else:
-                counts += abs(str_idx - seq_pos)
-                print(counts)
+                #counts += abs(str_idx - seq_pos)
+                #print(counts)
                 rad_rotated += ENCODER_CYCLE * abs(str_idx - seq_pos)
                 print(f"Rad rotated: {rad_rotated}")
                 seq_pos = str_idx
@@ -60,8 +60,8 @@ def encoderLoop():
             if rad_rotated >= 2 * math.pi:
                 cycles += 1
                 rad_rotated = 0
-                print(f'1{cycles} cycles')
-                #print(f'{rad_rotated} rad rotated')
+                print(f'Cycle completed. {cycles} cycles')
+                print(f'\t{rad_rotated} rad rotated')
 
             if cycles == 4 and on_short_side:
                 on_short_side = False
