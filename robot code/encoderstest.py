@@ -19,6 +19,8 @@ sequence = [
 ]
 
 def encoderLoop():
+    mts[0].power = 0.2
+    mts[1].power = 0.2
     encoderA = str(int(pins[2].digital_read()))
     encoderB = str(int(pins[3].digital_read()))
     prev_seq = encoderA + encoderB
