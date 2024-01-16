@@ -7,7 +7,7 @@ pins = robot.arduino.pins
 
 
 # ENCODER_CYCLE = (0.5*math.pi) / (34) - closest one yet (around 2 cycles out at 20 cycles)
-# ENCODER_CYCLE = (0.25*math.pi) / (11)
+ENCODER_CYCLE = (0.25*math.pi) / (11)
 pins[2].mode = INPUT
 pins[3].mode = INPUT
 
