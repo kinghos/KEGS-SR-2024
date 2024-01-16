@@ -24,7 +24,7 @@ def encoderLoop():
     while True:
         turning = False
 
-        # With 80mm wheels, there are 4 full cycles in 1000mm, and 6 full cycles in 1500mm
+        # With 80mm wheels, there are 2 full cycles in 1000mm, and 3 full cycles in 1500mm
         cycles = 0
         #counts = 0
 
@@ -63,10 +63,10 @@ def encoderLoop():
                 print(f'\t{rad_rotated} rad rotated')
                 rad_rotated = 0
 
-            if cycles == 4 and on_short_side:
+            if cycles == 2 and on_short_side:
                 on_short_side = False
                 turning = True
-            elif cycles == 6 and not on_short_side:
+            elif cycles == 3 and not on_short_side:
                 on_short_side = True
                 turning = True
 
