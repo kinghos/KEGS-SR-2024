@@ -6,7 +6,7 @@ mts = robot.motor_board.motors
 pins = robot.arduino.pins
 
 
-ENCODER_CYCLE = (2*math.pi) / (11)
+ENCODER_CYCLE = (math.pi) / (34)
 pins[2].mode = INPUT
 pins[3].mode = INPUT
 
@@ -34,12 +34,12 @@ def encoderLoop():
         str_idx = sequence.index(bin_str)
 
         rad_rotated += ENCODER_CYCLE * abs(str_idx - seq_pos)
-        print(rad_rotated)
+        #print(rad_rotated)
         if rad_rotated >= 2*math.pi:
             cycles += 1
             print(f"---------------------------------------------CYCLE {cycles}---------------------------------------------")
             rad_rotated = 0
-    robot.sleep(0.1)
+    #robot.sleep(0.1)
 
 
 encoderLoop()
