@@ -34,8 +34,31 @@ while True:
     # Turn 90 degrees (needs tweaking)
     mtrs.power[0] = 0.4
     mtrs.power[1] = -0.4
+    robot.sleep(1)
+    while True:
+        markers = robot.camera.see()
 
-    robot.sleep(2)
+        if not markers:
+            continue
+        marker = None
+        for i in markers:
+            if i.id == 150:
+                marker = i
+                break
+
+        # Adjust direction if the marker is not straight ahead
+        if marker.position.horizontal_angle < -0.02:
+            mtrs[0].power = 0.1
+            mtrs[1].power = -0.1
+        elif marker.position.horizontal_angle > 0.02:
+            mtrs[0].power = -0.1
+            mtrs[1].power = 0.1
+        else:
+            brake()
+            break
+
+
+    
     mtrs.power[0] = 0.2
     mtrs.power[1] = 0.2
     robot.sleep(1)
