@@ -34,8 +34,8 @@ def encoderLoop():
         rad_rotated = 0
 
         while not turning:
-            mts[0].power = 0.3
-            mts[1].power = 0.3
+            mts[0].power = 0.2
+            mts[1].power = 0.2
 
             encoderA = str(int(pins[2].digital_read()))
             encoderB = str(int(pins[3].digital_read()))
@@ -59,9 +59,9 @@ def encoderLoop():
 
             if rad_rotated >= 2 * math.pi:
                 cycles += 1
-                rad_rotated = 0
                 print(f'Cycle completed. {cycles} cycles')
                 print(f'\t{rad_rotated} rad rotated')
+                rad_rotated = 0
 
             if cycles == 4 and on_short_side:
                 on_short_side = False
