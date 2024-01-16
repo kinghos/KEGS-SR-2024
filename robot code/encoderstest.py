@@ -37,6 +37,8 @@ def encoderLoop():
         if rad_rotated >= 2*math.pi:
             cycles += 1
             print(f"---------------------------------------------CYCLE {cycles}---------------------------------------------")
+            rad_rotated = 0
+    robot.sleep(0.1)
 
 
 encoderLoop()
