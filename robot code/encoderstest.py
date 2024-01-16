@@ -26,12 +26,13 @@ def encoderLoop():
     prev_seq = encoderA + encoderB
     seq_pos = sequence.index(prev_seq)
     cycles = 0
+    rad_rotated = 0
     while True:
         encoderA = str(int(pins[2].digital_read()))
         encoderB = str(int(pins[3].digital_read()))
         bin_str = encoderA + encoderB
         str_idx = sequence.index(bin_str)
-        rad_rotated = 0
+
         rad_rotated += ENCODER_CYCLE * abs(str_idx - seq_pos)
         print(rad_rotated)
         if rad_rotated >= 2*math.pi:
