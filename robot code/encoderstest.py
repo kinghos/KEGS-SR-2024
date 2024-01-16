@@ -33,6 +33,7 @@ def encoderLoop():
         str_idx = sequence.index(bin_str)
         rad_rotated = 0
         rad_rotated += ENCODER_CYCLE * abs(str_idx - seq_pos)
+        print(rad_rotated)
         if rad_rotated >= 2*math.pi:
             cycles += 1
             print(f"CYCLE {cycles}")
