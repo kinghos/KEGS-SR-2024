@@ -11,7 +11,7 @@ pins = robot.arduino.pins
 # ENCODER_CYCLE = (10*math.pi) / (2*374) # - drifts around 2-3 cycles out (too low) at 30 cycles
 # ENCODER_CYCLE = (math.pi) / (2*34) # drifts around 5 cycles (too high) at 30 cycles
 
-ENCODER_CYCLE = (2*math.pi) / (374)
+ENCODER_CYCLE = (4*math.pi) / (374)
 
 pins[2].mode = INPUT
 pins[3].mode = INPUT
