@@ -34,8 +34,8 @@ def encoderLoop():
         rad_rotated = 0
 
         while not turning:
-            mts[0].power = 0.1
-            mts[1].power = 0.1
+            mts[0].power = 0.3
+            mts[1].power = 0.3
 
             encoderA = str(int(pins[2].digital_read()))
             encoderB = str(int(pins[3].digital_read()))
