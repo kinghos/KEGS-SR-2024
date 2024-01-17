@@ -3,7 +3,7 @@
 #define ENCODER_PIN_A 2 
 #define ENCODER_PIN_B 3
 #define PPR 374
-#define WHEEL_DIAMETER 0.080 // metres
+#define WHEEL_DIAMETER 80 // mm
 
 volatile long encoderCount = 0;
 float distance = 0;
@@ -13,23 +13,24 @@ void setup() {
     Serial.begin(115200);
     pinMode(ENCODER_PIN_A, INPUT);
     pinMode(ENCODER_PIN_B, INPUT);
+
     // Makes change on either pin trigger an interrupt
     attachInterrupt(digitalPinToInterrupt(ENCODER_PIN_A), encoderISR, CHANGE);
     attachInterrupt(digitalPinToInterrupt(ENCODER_PIN_B), encoderISR, CHANGE);
 }
 
-void loop() {
-    distance = (encoderCount / (float)PPR) * PI * WHEEL_DIAMETER;
+void loop() { 
+    distance = (encoderCount / (float) PPR) * PI * WHEEL_DIAMETER; // Finds distance travelled based on ratio to circumference of wheel
     Serial.print("Distance: ");
     Serial.println(distance);
-    delay(1000); // Update every second
+    delay(500); // Update every half second
 }
 
 void encoderISR() {
-    int MSB = digitalRead(ENCODER_PIN_A); 
-    int LSB = digitalRead(ENCODER_PIN_B); 
+    int phaseA = digitalRead(ENCODER_PIN_A); 
+    int phaseB = digitalRead(ENCODER_PIN_B); 
 
-    int encoded = (MSB << 1) | LSB; // Combines the two values into one number with a bitwise shift and bitwise OR
+    int encoded = (phaseA << 1) | phaseB; // Combines the two values into one number with a bitwise shift and bitwise OR
     
     int sum  = (lastEncoded << 2) | encoded; // Adds the previous encoder value to the current value to determine direction
 
