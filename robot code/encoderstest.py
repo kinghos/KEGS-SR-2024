@@ -41,7 +41,7 @@ def encoderLoop():
         str_idx = sequence.index(bin_str)
 
         rad_rotated += ENCODER_CYCLE * abs(str_idx - seq_pos)
-        counts += abx(str_idx - seq_pos)
+        counts += abs(str_idx - seq_pos)
         print(counts)
         seq_pos = str_idx
         prev_seq = bin_str
