@@ -13,8 +13,8 @@ def brake():
 
 #drive at a stable pace
 def mediumDrive():
-    robot.motor_board.motors[0].power = 0.3
-    robot.motor_board.motors[1].power = 0.3
+    robot.motor_board.motors[0].power = 0.2
+    robot.motor_board.motors[1].power = 0.2
 
 #drive backwards at x speed
 def backwardsDrive(speed):
@@ -154,7 +154,7 @@ def correctDrive(targetid, distance):
             satisfy = True
         # lower down the forklift in case it gets too close to see over the box potentially
         elif target.position.distance < distance + 200 and lowered == False:
-            robot.servo_board.servos[2].position = -0.4
+            #robot.servo_board.servos[2].position = -0.4
             brake()
             robot.sleep(0.5)
             lowered = True
@@ -178,13 +178,16 @@ def correctDrive(targetid, distance):
 
 #choose asteroid, go to asteroid, go to base, go to spaceship, put asteroid in spaceship, repeat
 def maincycle():
-    correctDrive(1, 700)
-    correctDrive(2, 700)
-    correctDrive(3, 700)
-    correctDrive(4, 700)
+    distance = 400
+    correctDrive(188, distance)
+    correctDrive(179, distance)
+    correctDrive(182, distance)
+    correctDrive(2, distance)
 
 
-
+robot.servo_board.servos[2].position = 1
+while True:
+    maincycle()
 
 
 
