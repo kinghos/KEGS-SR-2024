@@ -35,6 +35,8 @@ while True:
     mtrs.power[0] = 0.4
     mtrs.power[1] = -0.4
     robot.sleep(1)
+
+    markerCount = 0
     while True:
         markers = robot.camera.see()
 
@@ -42,8 +44,10 @@ while True:
             continue
         marker = None
         for i in markers:
-            if i.id == 150:
+            if i.id == 150 + markerCount:
                 marker = i
+                markerCount += 1
+                markerCount %= 4
                 break
 
         # Adjust direction if the marker is not straight ahead
@@ -63,4 +67,3 @@ while True:
     mtrs.power[1] = 0.2
     robot.sleep(1)
     brake()
-
