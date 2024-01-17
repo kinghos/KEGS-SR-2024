@@ -42,7 +42,7 @@ def encoderLoop():
 
         rad_rotated += ENCODER_CYCLE * abs(str_idx - seq_pos)
         counts += abs(str_idx - seq_pos)
-        print(counts)
+        #print(counts)
         seq_pos = str_idx
         prev_seq = bin_str
         #print(rad_rotated)
