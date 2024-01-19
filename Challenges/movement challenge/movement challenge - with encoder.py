@@ -6,7 +6,7 @@ mts = robot.motor_board.motors
 pins = robot.arduino.pins
 
 
-ENCODER_CYCLE = (4*math.pi) / (374)
+ENCODER_CYCLE = (math.pi) / (4*374)
 pins[2].mode = INPUT
 pins[3].mode = INPUT
 
