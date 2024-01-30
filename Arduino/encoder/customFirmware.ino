@@ -2,7 +2,7 @@
 
 #define ENCODER_PIN_A 2 
 #define ENCODER_PIN_B 3
-#define PPR 374
+#define CPR 1496 // Needs amendment
 #define WHEEL_DIAMETER 80 // mm
 
 volatile long encoderCount = 0;
@@ -20,7 +20,7 @@ void setup() {
 }
 
 void loop() { 
-    distance = (encoderCount / (float) PPR) * PI * WHEEL_DIAMETER; // Finds distance travelled based on ratio to circumference of wheel
+    distance = (encoderCount / (float) CPR) * PI * WHEEL_DIAMETER; // Finds distance travelled based on ratio to circumference of wheel
     Serial.print("Distance: ");
     Serial.println(distance);
     delay(500); // Update every half second
