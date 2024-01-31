@@ -1,6 +1,7 @@
 from sr.robot3 import *
 import math
 
+"""
 ARDUINO_SN = "ID No here" # Enter serial number
 SERIAL_BAUD_RATE = 115200
 
@@ -8,6 +9,8 @@ robot = Robot(
     ignored_arduinos=[ARDUINO_SN],
     raw_ports=[(ARDUINO_SN, SERIAL_BAUD_RATE)]
 )
+"""
+
 mts = robot.motor_board.motors
 pins = robot.arduino.pins
 
