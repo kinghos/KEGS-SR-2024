@@ -1,6 +1,8 @@
 from sr.robot3 import *
 import math
 
+robot = Robot()
+
 """
 ARDUINO_SN = "ID No here" # Enter serial number
 SERIAL_BAUD_RATE = 115200
@@ -63,7 +65,7 @@ def encoderLoop():
                 #counts += abs(str_idx - seq_pos)
                 #print(counts)
                 rad_rotated += ENCODER_CYCLE * abs(str_idx - seq_pos)
-                #print(f"Rad rotated: {rad_rotated}")
+                print(f"Rad rotated: {rad_rotated}")
                 seq_pos = str_idx
                 prev_seq = bin_str
 
