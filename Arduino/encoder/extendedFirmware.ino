@@ -8,8 +8,7 @@
 #define ENCODER_PIN_B 3
 float distance = 0;
 
-void
-setup()
+void setup()
 {
   Serial.begin(SERIAL_BAUD);
   pinMode(ENCODER_PIN_A, INPUT);
@@ -101,10 +100,10 @@ void loop()
     case 'e':
       Serial.write(distance)
 
-    default:
-      // A problem here: we do not know how to handle the command!
-      // Just ignore this for now.
-      break;
+          default :
+          // A problem here: we do not know how to handle the command!
+          // Just ignore this for now.
+          break;
     }
     Serial.print("\n");
   }
@@ -112,19 +111,19 @@ void loop()
 
 void encoderISR()
 {
-    int phaseA = digitalRead(ENCODER_PIN_A);
-    int phaseB = digitalRead(ENCODER_PIN_B);
+  int phaseA = digitalRead(ENCODER_PIN_A);
+  int phaseB = digitalRead(ENCODER_PIN_B);
 
-    int encoded = (phaseA << 1) | phaseB; // Combines the two values into one number with a bitwise shift and bitwise OR
+  int encoded = (phaseA << 1) | phaseB; // Combines the two values into one number with a bitwise shift and bitwise OR
 
-    int sum = (lastEncoded << 2) | encoded; // Adds the previous encoder value to the current value to determine direction
+  int sum = (lastEncoded << 2) | encoded; // Adds the previous encoder value to the current value to determine direction
 
-    if (sum == 0b1101 || sum == 0b0100 || sum == 0b0010 || sum == 0b1011)
-        encoderCount++;
-    if (sum == 0b1110 || sum == 0b0111 || sum == 0b0001 || sum == 0b1000)
-        encoderCount--;
+  if (sum == 0b1101 || sum == 0b0100 || sum == 0b0010 || sum == 0b1011)
+    encoderCount++;
+  if (sum == 0b1110 || sum == 0b0111 || sum == 0b0001 || sum == 0b1000)
+    encoderCount--;
 
-    lastEncoded = encoded; // Store value for next iteration
+  lastEncoded = encoded; // Store value for next iteration
 
-    distance = (encoderCount / (float)CPR) * PI * WHEEL_DIAMETER; // Finds distance travelled based on ratio to circumference of wheel
+  distance = (encoderCount / (float)CPR) * PI * WHEEL_DIAMETER; // Finds distance travelled based on ratio to circumference of wheel
 }
