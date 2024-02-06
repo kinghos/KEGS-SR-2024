@@ -6,7 +6,11 @@
 
 #define ENCODER_PIN_A 2
 #define ENCODER_PIN_B 3
+#define CPR 1496          // Needs amendment
+#define WHEEL_DIAMETER 80 // mm
+volatile long encoderCount = 0;
 float distance = 0;
+int lastEncoded = 0;
 
 void setup()
 {
@@ -91,6 +95,8 @@ void loop()
     case 'p':
       command_mode(INPUT_PULLUP);
       break;
+#define ENCODER_PIN_A 2
+#define ENCODER_PIN_B 3
     case 'v':
       Serial.print("SRcustom:");
       Serial.print(FW_VER);
