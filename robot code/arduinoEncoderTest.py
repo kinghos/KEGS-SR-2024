@@ -22,7 +22,7 @@ def readDistance():
     handshake = performHandshake()
     robot.sleep(0.1)
     while not handshake:
-        performHandshake()
+        handshake = performHandshake()
         robot.sleep(0.1)
     serialInput = arduino.read_until(b"\n")
     distance = int.from_bytes(serialInput, "little")
