@@ -6,7 +6,7 @@
 
 #define ENCODER_PIN_A 2
 #define ENCODER_PIN_B 3
-volatile long motors[2] = {0, 0}
+float distance = 0;
 
 void
 setup()
@@ -16,8 +16,8 @@ setup()
   pinMode(ENCODER_PIN_B, INPUT);
 
   // Makes change on either pin trigger an interrupt
-  attachInterrupt(digitalPinToInterrupt(ENCODER_PIN_A), encoderAISP, CHANGE);
-  attachInterrupt(digitalPinToInterrupt(ENCODER_PIN_B), encoderBISP, CHANGE);
+  attachInterrupt(digitalPinToInterrupt(ENCODER_PIN_A), encoderISP, CHANGE);
+  attachInterrupt(digitalPinToInterrupt(ENCODER_PIN_B), encoderISP, CHANGE);
 }
 
 int read_pin()
@@ -97,8 +97,9 @@ void loop()
       Serial.print("SRcustom:");
       Serial.print(FW_VER);
       break;
+    // Custom firmware onwards
     case 'e':
-      
+      Serial.write(distance)
 
     default:
       // A problem here: we do not know how to handle the command!
@@ -109,12 +110,21 @@ void loop()
   }
 }
 
-void encoderAISP()
+void encoderISR()
 {
-  motors[0]++;
-}
+    int phaseA = digitalRead(ENCODER_PIN_A);
+    int phaseB = digitalRead(ENCODER_PIN_B);
 
-void encoderBISP()
-{
-  motors[1]++;
+    int encoded = (phaseA << 1) | phaseB; // Combines the two values into one number with a bitwise shift and bitwise OR
+
+    int sum = (lastEncoded << 2) | encoded; // Adds the previous encoder value to the current value to determine direction
+
+    if (sum == 0b1101 || sum == 0b0100 || sum == 0b0010 || sum == 0b1011)
+        encoderCount++;
+    if (sum == 0b1110 || sum == 0b0111 || sum == 0b0001 || sum == 0b1000)
+        encoderCount--;
+
+    lastEncoded = encoded; // Store value for next iteration
+
+    distance = (encoderCount / (float)CPR) * PI * WHEEL_DIAMETER; // Finds distance travelled based on ratio to circumference of wheel
 }
