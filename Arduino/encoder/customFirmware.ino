@@ -22,7 +22,7 @@ void setup()
 
 void loop()
 {
-    int distance = (encoderCount / (float)CPR) * PI * WHEEL_DIAMETER; // Finds distance travelled based on ratio to circumference of wheel
+    float distance = (encoderCount / (float)CPR) * PI * WHEEL_DIAMETER; // Finds distance travelled based on ratio to circumference of wheel
 
     if Serial.available() > 0 // Perform handshake with Pi to ensure full message is received
         { 
