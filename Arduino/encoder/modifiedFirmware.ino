@@ -97,6 +97,9 @@ void loop()
       Serial.print("SRcustom:");
       Serial.print(FW_VER);
       break;
+    case 'e':
+      
+
     default:
       // A problem here: we do not know how to handle the command!
       // Just ignore this for now.
@@ -108,4 +111,10 @@ void loop()
 
 void encoderAISP()
 {
+  motors[0]++;
+}
+
+void encoderBISP()
+{
+  motors[1]++;
 }
