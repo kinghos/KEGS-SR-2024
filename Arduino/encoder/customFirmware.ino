@@ -22,8 +22,7 @@ void setup()
 
 void loop()
 {
-    distance = (encoderCount / (float)CPR) * PI * WHEEL_DIAMETER; // Finds distance travelled based on ratio to circumference of wheel
-
+    
     if Serial.available() > 0 // Perform handshake with Pi to ensure full message is received
         { 
             if (Serial.availableToWrite() >= sizeof(distance) + 1)
@@ -50,4 +49,6 @@ void encoderISR()
         encoderCount--;
 
     lastEncoded = encoded; // Store value for next iteration
+
+    distance = (encoderCount / (float)CPR) * PI * WHEEL_DIAMETER; // Finds distance travelled based on ratio to circumference of wheel
 }
