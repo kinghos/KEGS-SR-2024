@@ -22,16 +22,16 @@ void setup()
 
 void loop()
 {
-    
-    if Serial.available() > 0 // Perform handshake with Pi to ensure full message is received
-        { 
+
+    if Serial
+        .available() > 0 // Perform handshake with Pi to ensure full message is received
+        {
             if (Serial.availableToWrite() >= sizeof(distance) + 1)
             {
                 Serial.write(distance);
                 serial.write('\n');
             }
         }
-    delay(100); // Update every 0.1 seconds
 }
 
 void encoderISR()

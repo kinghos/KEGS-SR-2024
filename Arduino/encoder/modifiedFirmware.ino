@@ -2,12 +2,22 @@
 
 // We communicate with the Arduino at 115200 baud.
 #define SERIAL_BAUD 115200
-
 #define FW_VER 1
 
-void setup()
+#define ENCODER_PIN_A 2
+#define ENCODER_PIN_B 3
+volatile long motors[2] = {0, 0}
+
+void
+setup()
 {
   Serial.begin(SERIAL_BAUD);
+  pinMode(ENCODER_PIN_A, INPUT);
+  pinMode(ENCODER_PIN_B, INPUT);
+
+  // Makes change on either pin trigger an interrupt
+  attachInterrupt(digitalPinToInterrupt(ENCODER_PIN_A), encoderAISP, CHANGE);
+  attachInterrupt(digitalPinToInterrupt(ENCODER_PIN_B), encoderBISP, CHANGE);
 }
 
 int read_pin()
@@ -94,4 +104,8 @@ void loop()
     }
     Serial.print("\n");
   }
+}
+
+void encoderAISP()
+{
 }
