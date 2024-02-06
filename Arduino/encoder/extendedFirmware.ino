@@ -21,8 +21,7 @@ void setup()
 
 int read_pin()
 {
-  while (!Serial.available())
-    ;
+  while (!Serial.available());
   int pin = Serial.read();
   return (int)(pin - 'a');
 }
@@ -98,12 +97,12 @@ void loop()
       break;
     // Custom firmware onwards
     case 'e':
-      Serial.write(distance)
-
-          default :
-          // A problem here: we do not know how to handle the command!
-          // Just ignore this for now.
-          break;
+      Serial.write(distance);
+      break;
+    default:
+      // A problem here: we do not know how to handle the command!
+      // Just ignore this for now.
+      break;
     }
     Serial.print("\n");
   }
