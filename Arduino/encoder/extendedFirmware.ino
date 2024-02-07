@@ -6,7 +6,9 @@
 
 #define ENCODER_PIN_A 2
 #define ENCODER_PIN_B 3
-#define CPR 1496          // Needs amendment
+// Magic starts here---------
+#define CPR 2 * PI / (4 * 11)     // Note: idk why this works, but it does, so don't change and don't ammend in an attempt for more precision
+// Magic ends here-----------
 #define WHEEL_DIAMETER 80 // mm
 volatile long encoderCount = 0;
 float distance = 0;
@@ -19,8 +21,8 @@ void setup()
   pinMode(ENCODER_PIN_B, INPUT);
 
   // Makes change on either pin trigger an interrupt
-  attachInterrupt(digitalPinToInterrupt(ENCODER_PIN_A), encoderISP, CHANGE);
-  attachInterrupt(digitalPinToInterrupt(ENCODER_PIN_B), encoderISP, CHANGE);
+  attachInterrupt(digitalPinToInterrupt(ENCODER_PIN_A), encoderISR, CHANGE);
+  attachInterrupt(digitalPinToInterrupt(ENCODER_PIN_B), encoderISR, CHANGE);
 }
 
 int read_pin()
@@ -101,7 +103,8 @@ void loop()
       break;
     // Custom firmware onwards
     case 'e':
-      Serial.write(distance);
+      Serial.print(distance);
+      Serial.write("\n");
       break;
     default:
       // A problem here: we do not know how to handle the command!
