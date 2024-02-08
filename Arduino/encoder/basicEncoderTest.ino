@@ -1,4 +1,3 @@
-#include <Arduino.h>
 #include <Encoder.h>
 
 // We communicate with the Arduino at 115200 baud.
