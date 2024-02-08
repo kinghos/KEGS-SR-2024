@@ -89,7 +89,6 @@ void loop()
             break;
         case 'v':
             count = motor1.read();
-            Serial.print("Encoder count:");
             Serial.println(count);
             break;
         default:
