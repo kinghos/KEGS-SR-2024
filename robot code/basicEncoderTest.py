@@ -14,7 +14,6 @@ while True:
     mts[1].power = 0.25
     encoderCount = int(arduino.command("v"))
     distance = (encoderCount / CPR) * math.pi * WHEEL_DIAMETER
-
-    print(distance) # Prints cumulative distance
+    print(f"Count: {encoderCount},\t Distance: {distance}mm")
     robot.sleep(0.1)
     
