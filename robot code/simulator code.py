@@ -4,6 +4,9 @@ robot = Robot()
 #all marker ids of asteroids in an epic list
 asteroidid = [i for i in range(150, 200)]
 mid = robot.zone * 7 + 3
+wallMarkersid = [i for i in range(robot.zone * 7, robot.zone * 6)]
+collected = 0
+startTime = robot.time()
 
 
 #stop the motors
@@ -61,6 +64,22 @@ def firstAsteroid():
         print('i dont see any asteroids')
         return None
 
+def firstWallMarkers():
+    wallMarkers = []
+    listmarkers = robot.camera.see()
+    cycle = 0
+    for marker in listmarkers:
+        if marker.id in wallMarkersid:
+            wallMarkers.append(marker)
+    #print(f'i see asteroids: {asteroids}')
+    if len(wallMarkers) > 0:
+        print(f'i see {wallMarkers[0]} first')
+        return wallMarkers[0]
+    else:
+        print('i dont see any of our wall markers')
+        return None
+
+
 
 #find a desired target marker and return its information
 def look(targetid):
@@ -80,21 +99,20 @@ def turnSee(target):
     hasbeenseen = False
 
     robot.sleep(0.01)
-
+    tempTime = robot.time()
     while satisfy == False:
-
+        #if >10 sec elapsed then reset
+        if (robot.time() - tempTime) > 10:
+            print('times up')
+            return -1
         #if it doesnt see the target than it will turn counter-clockwise until it does
+        global looktarget
         looktarget = look(target)
 
         if looktarget == None:
             fastTurn(False)
             robot.sleep(0.1)
             print(f'could not find {target}')
-            if hasbeenseen:
-                print(f'I have lost sight of {target}, assuming worst case scenario')
-                backwardsDrive(0.3)
-                robot.sleep(2)
-                go()
 
 
         #need to find a way to make it deposit into area if it cannot find the spaceship
@@ -118,6 +136,56 @@ def turnSee(target):
             print(f'facing target ({target})')
             brake()
             satisfy = True
+    return 0
+
+
+def turnSeeList(target):
+    #satisfy is the name of the temp variable i use for while loops, i will find a better way another time
+    satisfy = False
+    hasbeenseen = False
+
+    robot.sleep(0.01)
+    tempTime = robot.time()
+    while satisfy == False:
+        #if >10 sec elapsed then reset
+        if (robot.time() - tempTime) > 10:
+            return -1
+        #if it doesnt see the target than it will turn counter-clockwise until it does
+        global looktarget
+        looktarget = None
+        for item in target:
+            looktarget = look(item)
+            if looktarget != None:
+                break
+
+        if looktarget == None:
+            fastTurn(False)
+            robot.sleep(0.1)
+            print(f'could not find {target}')
+
+
+        #need to find a way to make it deposit into area if it cannot find the spaceship
+        #something like if target == spaceship and done 360 == true: goToMidAndDeposItInArea()
+
+        #next 2 elifs are for turning until within a certain angle of accuracy
+        elif looktarget.position.horizontal_angle < -0.1:
+            hasbeenseen = True
+            slowTurn(False)
+            robot.sleep(0.05)
+            print(looktarget.position.horizontal_angle)
+        elif looktarget.position.horizontal_angle > 0.1:
+            hasbeenseen = True
+            slowTurn(True)
+            robot.sleep(0.05)
+            print(looktarget.position.horizontal_angle)
+        #is now facing the target, stop turning and end loop
+        else:
+            hasbeenseen = True
+            print(looktarget.position.horizontal_angle)
+            print(f'facing target ({target})')
+            brake()
+            satisfy = True
+    return looktarget
 
 
 def allAsteroid():
@@ -224,6 +292,66 @@ def correctDrive(targetid, distance):
                 robot.sleep(0.1)
                 mediumDrive()
                 print(f'{target.position.distance}mm to {target.id}')
+def spaceshipDeposit():
+    print('going to spaceship')
+
+
+
+    # drive forward
+    mediumDrive()
+
+    correctDrive(robot.zone + 120, 600)
+    print('finished correct driving')
+
+    robot.sleep(0.2)
+
+    # deposit into ship sequence
+    print('raising')
+    robot.servo_board.servos[2].position = 1
+
+    robot.sleep(2)
+
+    # drive a little forward
+    robot.motor_board.motors[0].power = 0.2
+    robot.motor_board.motors[1].power = 0.2
+
+    robot.sleep(1.6)
+
+    brake()
+    global collected
+    # effecient stacking
+    print(f'i have collected {collected} asteroids so far')
+    if collected % 2 == 0:
+        print('depositing to 1')
+        fastTurn(True)
+        robot.sleep(0.2)
+        brake()
+
+    else:
+        print('depositing to 2')
+        fastTurn(False)
+        robot.sleep(0.2)
+        brake()
+
+    # fully open pincers
+    print('release')
+    robot.servo_board.servos[0].position = -1
+    robot.servo_board.servos[1].position = -1
+
+    collected += 1
+
+    robot.sleep(1)
+
+    backwardsDrive(0.5)
+
+    robot.sleep(1)
+
+    brake()
+
+    robot.servo_board.servos[2].position = -0.2
+
+def reset():
+    maincycle()
 
 
 #choose asteroid, go to asteroid, go to base, go to spaceship, put asteroid in spaceship, repeat
@@ -283,6 +411,7 @@ def maincycle():
 
     robot.sleep(1.2)
 
+
     #grab box
     robot.servo_board.servos[0].position = 0.6
     robot.servo_board.servos[1].position = 0.6
@@ -294,85 +423,103 @@ def maincycle():
 
     robot.sleep(1.2)
 
-    turnSee(mid)
+    seeMid = turnSee(mid)
+    if seeMid == 0:
+        print('going to mid')
+        correctDrive(mid, 500)
+    elif seeMid == -1:
+        seeMid = turnSeeList(wallMarkersid)
+        if seeMid != -1:
+            correctDrive(seeMid.id, 500)
 
-    print('going to mid')
-    correctDrive(mid, 500)
 
     #robot.servo_board.servos[2].position = -0.4
 
     robot.sleep(0.5)
 
-    print('going to spaceship')
-
-    #go to spaceship
-    turnSee(robot.zone+120)
-
-    #drive forward
-    mediumDrive()
-
-    correctDrive(robot.zone + 120, 600)
-    print('finished correct driving')
-
-    robot.sleep(0.2)
-
-    #deposit into ship sequence
-    print('raising')
-    robot.servo_board.servos[2].position = 1
-
-    robot.sleep(2)
-
-    #drive a little forward
-    robot.motor_board.motors[0].power = 0.2
-    robot.motor_board.motors[1].power = 0.2
-
-    robot.sleep(1.6)
-
-    brake()
-
-    # effecient stacking
-    print(f'i have collected {collected} asteroids so far')
-    if collected % 2 == 0:
-        print('depositing to 1')
+    # go to spaceship
+    seeSpaceship = turnSee(robot.zone + 120)
+    if seeSpaceship == 0:
+        #deposit in spaceship
+        spaceshipDeposit()
+    elif seeSpaceship == -1:
+        #deposit in planet
+        #turn and drive a bit to avoid obscuring the mid marker
         fastTurn(True)
-        robot.sleep(0.2)
+        robot.sleep(1)
+        # drive a little forward
+        robot.motor_board.motors[0].power = 0.2
+        robot.motor_board.motors[1].power = 0.2
+
+        robot.sleep(1.6)
+
         brake()
 
-    else:
-        print('depositing to 2')
-        fastTurn(False)
-        robot.sleep(0.2)
+        print('release')
+        robot.servo_board.servos[0].position = -1
+        robot.servo_board.servos[1].position = -1
+        global collected
+        collected += 1
+
+        robot.sleep(1)
+
+        backwardsDrive(0.5)
+
+        robot.sleep(1)
+
         brake()
 
-    #fully open pincers
-    print('release')
-    robot.servo_board.servos[0].position = -1
-    robot.servo_board.servos[1].position = -1
+        robot.servo_board.servos[2].position = -0.2
 
-    robot.sleep(1)
 
-    backwardsDrive(0.5)
-
-    robot.sleep(1)
-
-    brake()
-
-    robot.servo_board.servos[2].position = -0.2
 
     print('turning')
     fastTurn(False)
 
     robot.sleep(0.9)
 
-    return collected
 
-collected = 0
-def go():
-    #just repeat forever - do things here for stuff such as contingencys or returning to base at time limit
-    #collected is a variable that stores the number of times it has run the maincycle function
-    #did this since you cant change global variables from within a function
+#game time is 150 seconds
 
-    while True:
-        collected = maincycle()
-        collected += 1
-go()
+
+while (robot.time() - startTime) < 105:
+    currentProgram = maincycle()
+brake()
+#turn to egg
+if turnSee(110) == 0:
+    robot.servo_board.servos[2].position = 0
+    correctDrive(110, 500)
+    robot.servo_board.servos[2].position = -1
+
+    robot.sleep(1.2)
+
+    # grab box
+    robot.servo_board.servos[0].position = 0.6
+    robot.servo_board.servos[1].position = 0.6
+
+    robot.sleep(1)
+
+    # lift up with forklift a bit
+    robot.servo_board.servos[2].position = -0.8
+
+    robot.sleep(1.2)
+
+    #turns towards team to the right
+    if turnSee((mid % 7) + 21) == 0:
+        correctDrive((mid % 7) + 21, 500)
+        brake()
+
+        print('release')
+        robot.servo_board.servos[0].position = -1
+        robot.servo_board.servos[1].position = -1
+        
+
+        robot.sleep(1)
+
+        backwardsDrive(0.5)
+
+        robot.sleep(1)
+
+        brake()
+
+        robot.servo_board.servos[2].position = -0.2
