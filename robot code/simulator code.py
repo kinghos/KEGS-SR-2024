@@ -1,9 +1,13 @@
 from sr.robot3 import *
+import math
 robot = Robot()
 
 #all marker ids of asteroids in an epic list
-asteroidid = [i for i in range(150, 200)]
-mid = robot.zone * 7 + 3
+ASTEROID_IDS = [i for i in range(150, 200)]
+MID_BASE_ID = robot.zone * 7 + 3
+BASE_IDS = [i for i in range(robot.zone * 7, (robot.zone + 1) * 7)]
+collected = 0
+startTime = robot.time()
 
 
 #stop the motors
@@ -22,22 +26,18 @@ def backwardsDrive(speed):
     robot.motor_board.motors[1].power = -1*speed
 
 
-#clockwise is true
-#counter clockwise is false
-#slow turning
-def slowTurn(leftright: bool):
-    if leftright == True:
+#slow turning, clockwise is true, counter clockwise is false
+def slowTurn(clockwise: bool):
+    if clockwise == True:
         robot.motor_board.motors[0].power = 0.05
         robot.motor_board.motors[1].power = -0.05
     else:
         robot.motor_board.motors[0].power = -0.05
         robot.motor_board.motors[1].power = 0.05
 
-#clockwise is true
-#counter clockwise is false
-#faster turning
-def fastTurn(leftright: bool):
-    if leftright == True:
+#fast turning, clockwise is true, counter clockwise is false
+def fastTurn(clockwise: bool):
+    if clockwise == True:
         robot.motor_board.motors[0].power = 0.1
         robot.motor_board.motors[1].power = -0.1
     else:
@@ -47,18 +47,21 @@ def fastTurn(leftright: bool):
 
 #look at all of the markers and only return those that are asteroids
 def firstAsteroid():
-    asteroids = []
-    listmarkers = robot.camera.see()
-    cycle = 0
-    for marker in listmarkers:
-        if marker.id in asteroidid:
-            asteroids.append(marker)
-    #print(f'i see asteroids: {asteroids}')
+    asteroids = list(filter(lambda marker : (marker.id in ASTEROID_IDS and isAsteroidRetrievable(marker)), robot.camera.see()))
     if len(asteroids) > 0:
         print(f'i see {asteroids[0]} first')
         return asteroids[0]
     else:
         print('i dont see any asteroids')
+        return None
+
+def firstWallMarkers():
+    wallMarkers = list(filter(lambda marker : (marker.id in BASE_IDS), robot.camera.see()))
+    if len(wallMarkers) > 0:
+        print(f'i see {wallMarkers[0]} first')
+        return wallMarkers[0]
+    else:
+        print('i dont see any of our wall markers')
         return None
 
 
@@ -73,29 +76,33 @@ def look(targetid):
 
 
 
+
 #turn counter-clockwise until in line with target, slow turn to a degree of accuracy
 def turnSee(target):
+    target = [target,]
     #satisfy is the name of the temp variable i use for while loops, i will find a better way another time
     satisfy = False
     hasbeenseen = False
 
     robot.sleep(0.01)
-
+    tempTime = robot.time()
     while satisfy == False:
-
+        #if >10 sec elapsed then reset
+        if (robot.time() - tempTime) > 10:
+            print('times up')
+            return -1
         #if it doesnt see the target than it will turn counter-clockwise until it does
+        global looktarget
         looktarget = look(target)
+        for item in target:
+            looktarget = look(item)
+            if looktarget != None:
+                break
 
         if looktarget == None:
             fastTurn(False)
             robot.sleep(0.1)
             print(f'could not find {target}')
-            if hasbeenseen:
-                print(f'I have lost sight of {target}, assuming worst case scenario')
-                backwardsDrive(0.3)
-                robot.sleep(2)
-                go()
-
 
         #need to find a way to make it deposit into area if it cannot find the spaceship
         #something like if target == spaceship and done 360 == true: goToMidAndDeposItInArea()
@@ -118,6 +125,7 @@ def turnSee(target):
             print(f'facing target ({target})')
             brake()
             satisfy = True
+    return looktarget
 
 
 def allAsteroid():
@@ -127,23 +135,33 @@ def allAsteroid():
         listmarkers = robot.camera.see()
         cycle = 0
         for marker in listmarkers:
-            if marker.id in asteroidid:
+            if marker.id in ASTEROID_IDS:
                 asteroids.append(marker)
-            if marker.id == mid:
+            if marker.id == MID_BASE_ID:
                 seenArenaWall += 1
     return listmarkers
 
+def isAsteroidRetrievable(marker):
+    marker_camera_vertical_distance = marker.position.distance * math.sin(marker.position.vertical_angle)
+    # If negative, then the marker lies below the camera
+    if marker_camera_vertical_distance > 1000:
+        print(f'IRRETRIEVABLE marker no. {marker}; marker_camera_vertical_distance = {marker_camera_vertical_distance}')
+        return False
+    return True
 
 def closestAsteroid():
-    seenArenaWall = False
+    seen_opposite_left_id = False # If starting at zone 0, ids in question are 13 and 14
+    seen_opposite_right_id = False # If starting at zone 0, id in question are 20 and 21 (consider 2 for contingency)
     asteroids = []
-    while not seenArenaWall:
+    while (not seen_opposite_left_id) and (not seen_opposite_right_id):
         fastTurn(False)
         listmarkers = robot.camera.see()
         for marker in listmarkers:
-            if marker.id == mid:
-                seenArenaWall = True
-            if marker.id in asteroidid:
+            if marker.id == ((robot.zone + 2) * 7) or ((robot.zone + 2) * 7 - 1):
+                seen_opposite_left_id = True
+            if marker.id == ((robot.zone + 3) * 7) or ((robot.zone + 2) * 7 - 1):
+                seen_opposite_right_id = True
+            if marker.id in ASTEROID_IDS and isAsteroidRetrievable(marker):
                 asteroids.append(marker)
 
     brake()
@@ -226,11 +244,71 @@ def correctDrive(targetid, distance):
                 print(f'{target.position.distance}mm to {target.id}')
 
 
+
+def spaceshipDeposit():
+    print('going to spaceship')
+
+    # drive forward
+    mediumDrive()
+
+    correctDrive(robot.zone + 120, 600)
+    print('finished correct driving')
+
+    robot.sleep(0.2)
+
+    # deposit into ship sequence
+    print('raising')
+    robot.servo_board.servos[2].position = 1
+
+    robot.sleep(2)
+
+    # drive a little forward
+    robot.motor_board.motors[0].power = 0.2
+    robot.motor_board.motors[1].power = 0.2
+
+    robot.sleep(1.6)
+
+    brake()
+    global collected
+    # effecient stacking
+    print(f'i have collected {collected} asteroids so far')
+    if collected % 2 == 0:
+        print('depositing to 1')
+        fastTurn(True)
+        robot.sleep(0.2)
+        brake()
+
+    else:
+        print('depositing to 2')
+        fastTurn(False)
+        robot.sleep(0.2)
+        brake()
+
+    # fully open pincers
+    print('release')
+    robot.servo_board.servos[0].position = -1
+    robot.servo_board.servos[1].position = -1
+
+    collected += 1
+
+    robot.sleep(1)
+
+    backwardsDrive(0.5)
+
+    robot.sleep(1)
+
+    brake()
+
+    robot.servo_board.servos[2].position = -0.2
+
+
+
+def reset():
+    maincycle()
+
+
 #choose asteroid, go to asteroid, go to base, go to spaceship, put asteroid in spaceship, repeat
 def maincycle():
-
-    #the middle of out base area's marker - if you are area 3 then your middle is 26
-    mid = robot.zone * 7 + 3
 
     #lift up the forklift a bit to ensure no collision with raised platform/other boxes
     #lowered this a bit because box pickup interferred a bit with vision
@@ -247,7 +325,7 @@ def maincycle():
         print('I did not see an asteroid to target')
         slowTurn(False)
         robot.sleep(0.1)
-        firstasteroid = firstAsteroid()
+        firstasteroid = closestAsteroid()
     print(f'I have set {firstasteroid.id} as the target asteroid')
     print(f'The target asteroid has these stats: {firstasteroid}')
 
@@ -259,8 +337,10 @@ def maincycle():
 
     #drive forward until no longer able to see asteroid
     untilUnsee(firstasteroid)
-
-    robot.sleep(0.5)
+    
+    #lowering forklift here
+    robot.servo_board.servos[2].position = -1
+    robot.sleep(0.7)
 
     #read distance to sensor using s o n a r woah
     robot.arduino.pins[A4].mode = INPUT
@@ -278,101 +358,74 @@ def maincycle():
     #should make these numbers a little smaller since it will squish the box to death
     #it goes from -1 to 1 btw
     #could make effecient box stacking by moving from side to side so that it doesnt overflow so easily
-    #lower forklift
-    robot.servo_board.servos[2].position = -1
-
-    robot.sleep(1.2)
 
     #grab box
     robot.servo_board.servos[0].position = 0.6
     robot.servo_board.servos[1].position = 0.6
 
-    robot.sleep(1)
+    robot.sleep(0.6)
 
     #lift up with forklift a bit
     robot.servo_board.servos[2].position = -0.8
 
-    robot.sleep(1.2)
+    #robot.sleep(1.2)
+    
+    seeLeftBase = turnSee(BASE_IDS[2])
+    if seeLeftBase == -1:
+        seeMid = turnSee(BASE_IDS)
+        if seeMid != -1:
+            correctDrive(seeMid.id, 500)
+    else:
+        print(f'going to {BASE_IDS[2]} (base)')
+        correctDrive(BASE_IDS[2], 500)
 
-    turnSee(mid)
-
-    print('going to mid')
-    correctDrive(mid, 500)
 
     #robot.servo_board.servos[2].position = -0.4
 
     robot.sleep(0.5)
 
-    print('going to spaceship')
-
-    #go to spaceship
-    turnSee(robot.zone+120)
-
-    #drive forward
-    mediumDrive()
-
-    correctDrive(robot.zone + 120, 600)
-    print('finished correct driving')
-
-    robot.sleep(0.2)
-
-    #deposit into ship sequence
-    print('raising')
-    robot.servo_board.servos[2].position = 1
-
-    robot.sleep(2)
-
-    #drive a little forward
-    robot.motor_board.motors[0].power = 0.2
-    robot.motor_board.motors[1].power = 0.2
-
-    robot.sleep(1.6)
-
-    brake()
-
-    # effecient stacking
-    print(f'i have collected {collected} asteroids so far')
-    if collected % 2 == 0:
-        print('depositing to 1')
+    # go to spaceship
+    seeSpaceship = turnSee(robot.zone + 120)
+    if seeSpaceship != -1:
+        #deposit in spaceship
+        spaceshipDeposit()
+    elif seeSpaceship == -1:
+        #deposit in planet
+        #turn and drive a bit to avoid obscuring the MID_BASE_ID marker
         fastTurn(True)
-        robot.sleep(0.2)
+        robot.sleep(1)
+        # drive a little forward
+        robot.motor_board.motors[0].power = 0.2
+        robot.motor_board.motors[1].power = 0.2
+
+        robot.sleep(1.6)
+
         brake()
 
-    else:
-        print('depositing to 2')
-        fastTurn(False)
-        robot.sleep(0.2)
+        print('release')
+        robot.servo_board.servos[0].position = -1
+        robot.servo_board.servos[1].position = -1
+        global collected
+        collected += 1
+
+        robot.sleep(1)
+
+        backwardsDrive(0.5)
+
+        robot.sleep(1)
+
         brake()
 
-    #fully open pincers
-    print('release')
-    robot.servo_board.servos[0].position = -1
-    robot.servo_board.servos[1].position = -1
+        robot.servo_board.servos[2].position = -0.2
 
-    robot.sleep(1)
 
-    backwardsDrive(0.5)
-
-    robot.sleep(1)
-
-    brake()
-
-    robot.servo_board.servos[2].position = -0.2
 
     print('turning')
     fastTurn(False)
 
     robot.sleep(0.9)
 
-    return collected
 
-collected = 0
-def go():
-    #just repeat forever - do things here for stuff such as contingencys or returning to base at time limit
-    #collected is a variable that stores the number of times it has run the maincycle function
-    #did this since you cant change global variables from within a function
-
-    while True:
-        collected = maincycle()
-        collected += 1
-go()
+#game time is 150 seconds
+while True:
+    currentProgram = maincycle()
