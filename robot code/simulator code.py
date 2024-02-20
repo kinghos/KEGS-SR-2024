@@ -6,6 +6,9 @@ robot = Robot()
 ASTEROID_IDS = [i for i in range(150, 200)]
 MID_BASE_ID = robot.zone * 7 + 3
 BASE_IDS = [i for i in range(robot.zone * 7, (robot.zone + 1) * 7)]
+EGG_ID = 110
+PORT_ID = robot.zone + 120
+STARBOARD_ID = robot.zone + 125
 collected = 0
 startTime = robot.time()
 
@@ -76,13 +79,18 @@ def look(targetid):
 
 
 
-
+"""
+    target argument may be a list or a integer target id
+    
+    returns -1 for 'times up'
+    returns marker info for success
+"""
 #turn counter-clockwise until in line with target, slow turn to a degree of accuracy
 def turnSee(target):
-    target = [target,]
+    if isinstance(target, int):
+        target = [target,]
     #satisfy is the name of the temp variable i use for while loops, i will find a better way another time
     satisfy = False
-    hasbeenseen = False
 
     robot.sleep(0.01)
     tempTime = robot.time()
@@ -109,18 +117,15 @@ def turnSee(target):
 
         #next 2 elifs are for turning until within a certain angle of accuracy
         elif looktarget.position.horizontal_angle < -0.1:
-            hasbeenseen = True
             slowTurn(False)
             robot.sleep(0.05)
             print(looktarget.position.horizontal_angle)
         elif looktarget.position.horizontal_angle > 0.1:
-            hasbeenseen = True
             slowTurn(True)
             robot.sleep(0.05)
             print(looktarget.position.horizontal_angle)
         #is now facing the target, stop turning and end loop
         else:
-            hasbeenseen = True
             print(looktarget.position.horizontal_angle)
             print(f'facing target ({target})')
             brake()
@@ -128,38 +133,26 @@ def turnSee(target):
     return looktarget
 
 
-def allAsteroid():
-    seenArenaWall = 0
-    while seenArenaWall < 2:
-        asteroids = []
-        listmarkers = robot.camera.see()
-        cycle = 0
-        for marker in listmarkers:
-            if marker.id in ASTEROID_IDS:
-                asteroids.append(marker)
-            if marker.id == MID_BASE_ID:
-                seenArenaWall += 1
-    return listmarkers
-
 def isAsteroidRetrievable(marker):
     marker_camera_vertical_distance = marker.position.distance * math.sin(marker.position.vertical_angle)
     # If negative, then the marker lies below the camera
     if marker_camera_vertical_distance > 1000:
-        print(f'IRRETRIEVABLE marker no. {marker}; marker_camera_vertical_distance = {marker_camera_vertical_distance}')
+        print(f'Irretrievable marker no. {marker}; marker_camera_vertical_distance = {marker_camera_vertical_distance}')
         return False
     return True
+
 
 def closestAsteroid():
     seen_opposite_left_id = False # If starting at zone 0, ids in question are 13 and 14
     seen_opposite_right_id = False # If starting at zone 0, id in question are 20 and 21 (consider 2 for contingency)
     asteroids = []
     while (not seen_opposite_left_id) and (not seen_opposite_right_id):
-        fastTurn(False)
+        fastTurn(False) # Could make it turn CW / CCW depending on which marker (left opposite or right opposite) it sees first
         listmarkers = robot.camera.see()
         for marker in listmarkers:
-            if marker.id == ((robot.zone + 2) * 7) or ((robot.zone + 2) * 7 - 1):
+            if marker.id == ((robot.zone + 2) * 7) or marker.id == ((robot.zone + 2) * 7 - 1):
                 seen_opposite_left_id = True
-            if marker.id == ((robot.zone + 3) * 7) or ((robot.zone + 2) * 7 - 1):
+            if marker.id == ((robot.zone + 3) * 7)  or marker.id == ((robot.zone + 2) * 7 - 1):
                 seen_opposite_right_id = True
             if marker.id in ASTEROID_IDS and isAsteroidRetrievable(marker):
                 asteroids.append(marker)
@@ -302,6 +295,56 @@ def spaceshipDeposit():
     robot.servo_board.servos[2].position = -0.2
 
 
+def planetDeposit():
+    print("going to planet for deposition")
+    #turn and drive a bit to avoid obscuring the MID_BASE_ID marker
+    fastTurn(True)
+    robot.sleep(1)
+    # drive a little forward
+    robot.motor_board.motors[0].power = 0.2
+    robot.motor_board.motors[1].power = 0.2
+
+    robot.sleep(1.6)
+
+    brake()
+
+    print('release')
+    robot.servo_board.servos[0].position = -1
+    robot.servo_board.servos[1].position = -1
+    global collected
+    collected += 1
+
+    robot.sleep(1)
+
+    backwardsDrive(0.5)
+
+    robot.sleep(1)
+
+    brake()
+
+    robot.servo_board.servos[2].position = -0.2
+
+
+def eggMover():
+    print("Moving egg out of base")
+    return
+
+# TO DOOOOOOOOOOOOOOOOOOOOOOOO
+def eggChecker():
+    seen_base_left_id = False # If starting at zone 0, ids in question are 27, 0, 1 (consider 3 for extra contingency)
+    seen_base_right_id = False # If starting at zone 0, id in question are 5, 6, 7 (consider 3 for extra contingency)
+    while (not seen_base_left_id) and (not seen_base_right_id):
+        fastTurn(False)
+        listmarkers = robot.camera.see()
+        for marker in listmarkers:
+            if marker.id == ((robot.zone) * 7 - 1) or marker.id == ((robot.zone) * 7) or marker.id == ((robot.zone) * 7 + 1):
+                seen_base_left_id = True
+            if marker.id == ((robot.zone + 1) * 7) or marker.id == ((robot.zone + 1) * 7 - 1) or marker.id == ((robot.zone + 1) * 7 - 2):
+                seen_base_right_id = True
+            if marker.id == EGG_ID: # Need to add some trigonometry to determine if it's actually in our base and not just near it
+                print("EGG IN BASE")
+                eggMover()
+
 
 def reset():
     maincycle()
@@ -354,21 +397,16 @@ def maincycle():
         print('distance is 5m')
         robot.sleep(0.01)
 
-    #grab code
-    #should make these numbers a little smaller since it will squish the box to death
-    #it goes from -1 to 1 btw
-    #could make effecient box stacking by moving from side to side so that it doesnt overflow so easily
-
     #grab box
     robot.servo_board.servos[0].position = 0.6
     robot.servo_board.servos[1].position = 0.6
-
     robot.sleep(0.6)
 
     #lift up with forklift a bit
     robot.servo_board.servos[2].position = -0.8
 
-    #robot.sleep(1.2)
+    # INSERT EGG CHECKING CODE HERE
+    eggChecker()
     
     seeLeftBase = turnSee(BASE_IDS[2])
     if seeLeftBase == -1:
@@ -380,43 +418,16 @@ def maincycle():
         correctDrive(BASE_IDS[2], 500)
 
 
-    #robot.servo_board.servos[2].position = -0.4
-
     robot.sleep(0.5)
 
     # go to spaceship
-    seeSpaceship = turnSee(robot.zone + 120)
+    seeSpaceship = turnSee([PORT_ID, STARBOARD_ID]) # Find either port or starboard
     if seeSpaceship != -1:
         #deposit in spaceship
         spaceshipDeposit()
     elif seeSpaceship == -1:
         #deposit in planet
-        #turn and drive a bit to avoid obscuring the MID_BASE_ID marker
-        fastTurn(True)
-        robot.sleep(1)
-        # drive a little forward
-        robot.motor_board.motors[0].power = 0.2
-        robot.motor_board.motors[1].power = 0.2
-
-        robot.sleep(1.6)
-
-        brake()
-
-        print('release')
-        robot.servo_board.servos[0].position = -1
-        robot.servo_board.servos[1].position = -1
-        global collected
-        collected += 1
-
-        robot.sleep(1)
-
-        backwardsDrive(0.5)
-
-        robot.sleep(1)
-
-        brake()
-
-        robot.servo_board.servos[2].position = -0.2
+        planetDeposit()
 
 
 
