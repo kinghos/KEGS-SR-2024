@@ -68,7 +68,7 @@ def look(targetid):
     returns marker info for success
 """
 #turn counter-clockwise until in line with target, slow turn to a degree of accuracy
-def turnSee(target):
+def turnSee(target, direction = False):
     if isinstance(target, int): #If the argument passsed is an integer, convert to a list (this conversion allows for amalgamation of previous turnSee and turnSeeList)
         target = [target,]
     
@@ -76,8 +76,8 @@ def turnSee(target):
     robot.sleep(0.01)
     tempTime = robot.time()
     while facing_target == False:
-        #if >10 sec elapsed then reset
-        if (robot.time() - tempTime) > 10:
+        #if >5 sec elapsed then reset
+        if (robot.time() - tempTime) > 5:
             print('times up')
             return -1
         #if it doesnt see the target than it will turn counter-clockwise until it does
@@ -89,7 +89,7 @@ def turnSee(target):
                 break
 
         if looktarget == None:
-            fastTurn(False)
+            fastTurn(direction)
             robot.sleep(0.1)
             print(f'could not find {target}')
 
@@ -121,25 +121,30 @@ def isAsteroidRetrievable(marker):
 
 
 def closestAsteroid():
-    print("Looking for closest asteroid")
     seen_opposite_left_id = False # If starting at zone 0, ids in question are 13 and 14
     seen_opposite_right_id = False # If starting at zone 0, id in question are 20 and 21 (consider 2 for contingency)
     seen_base_middle_id = False # Added contingency
     asteroids = []
-    while (not seen_opposite_left_id and not seen_opposite_right_id) or seen_base_middle_id:
-        print(seen_opposite_left_id, seen_opposite_right_id, seen_base_middle_id)
+    clockwise_turn = False # which way to turn for scanning of arena
+    print("Left opposite:", (((robot.zone + 2) % 4) * 7), "OR", (((robot.zone + 2) % 4) * 7 - 1) % NUMBER_OF_WALL_MARKERS)
+    print("Left opposite:", (((robot.zone + 3) % 4) * 7), "OR", (((robot.zone + 3) % 4) * 7 - 1) % NUMBER_OF_WALL_MARKERS)
+    while not (seen_opposite_left_id and seen_opposite_right_id) or seen_base_middle_id:
+
         if seen_opposite_left_id and not seen_opposite_right_id:
-            print("Turning CW")
-            fastTurn(True)
+            clockwise_turn = True
         elif seen_opposite_right_id and not seen_opposite_left_id:
-            print("Turning CCW")
-            fastTurn(False)
+            clockwise_turn = False
+
+        fastTurn(clockwise_turn)
+
         listmarkers = robot.camera.see()
         for marker in listmarkers:
             if marker.id == (((robot.zone + 2) % 4) * 7) or marker.id == (((robot.zone + 2) % 4) * 7 - 1) % NUMBER_OF_WALL_MARKERS:
                 seen_opposite_left_id = True
+                print("Seen left opposite")
             if marker.id == (((robot.zone + 3) % 4) * 7) or marker.id == (((robot.zone + 3) % 4) * 7 - 1) % NUMBER_OF_WALL_MARKERS:
                 seen_opposite_right_id = True
+                print("Seen right opposite")
             if marker.id == MID_BASE_ID:
                 seen_base_middle_id = True
             if marker.id in ASTEROID_IDS and isAsteroidRetrievable(marker):
@@ -156,8 +161,7 @@ def closestAsteroid():
             closest = marker
         if marker.position.distance < closest.position.distance:
             closest = marker
-    return closest
-
+    return (closest, clockwise_turn)
 
 
 def untilUnsee(target):
@@ -289,7 +293,7 @@ def planetDeposit():
     robot.motor_board.motors[0].power = 0.2
     robot.motor_board.motors[1].power = 0.2
 
-    robot.sleep(1.6)
+    robot.sleep(1.4)
 
     brake()
 
@@ -314,11 +318,12 @@ def eggMover():
     print("Moving egg out of base")
     return
 
+
 # TO DOOOOOOOOOOOOOOOOOOOOOOOO
 def eggChecker():
     seen_base_left_id = False # If starting at zone 0, ids in question are 27, 0, 1 (consider 3 for extra contingency)
     seen_base_right_id = False # If starting at zone 0, id in question are 5, 6, 7 (consider 3 for extra contingency)
-    while (not seen_base_left_id) and (not seen_base_right_id):
+    while not (seen_base_left_id and seen_base_right_id):
         if seen_base_left_id and not seen_base_right_id:
             fastTurn(True) 
         elif seen_base_right_id and not seen_base_left_id:
@@ -348,7 +353,9 @@ def maincycle():
     robot.servo_board.servos[1].position = -1
 
     #set a target asteroid to pick up
-    firstasteroid = closestAsteroid()
+    asteroid_info = closestAsteroid()
+    firstasteroid = asteroid_info[0]
+    direction_of_turn = not asteroid_info[1]
 
 
     #if it didnt see an asteroid, it will turn counter-clockwise until it does and set that as its target
@@ -356,12 +363,14 @@ def maincycle():
         print('I did not see an asteroid to target')
         slowTurn(False)
         robot.sleep(0.1)
-        firstasteroid = closestAsteroid()
-    print(f'I have set {firstasteroid.id} as the target asteroid')
+        asteroid_info = closestAsteroid()
+        firstasteroid = asteroid_info[0]
+        direction_of_turn = not asteroid_info[1] #if we turned CW to scan the arena, we turn CCW to find the asteroid
+    print(f'I have set {firstasteroid.id} as the target asteroid. To reach this asteroid I will turn {direction_of_turn}')
     print(f'The target asteroid has these stats: {firstasteroid}')
 
     #turn until it is in line with the target asteroid
-    turnSee(firstasteroid.id)
+    turnSee(firstasteroid.id, direction_of_turn)
 
     #move forward
     mediumDrive()
@@ -396,7 +405,7 @@ def maincycle():
     # INSERT EGG CHECKING CODE HERE
     #eggChecker()
     
-    seeLeftBase = turnSee(BASE_IDS[2])
+    seeLeftBase = turnSee(BASE_IDS[2], True)
     if seeLeftBase == -1:
         seeMid = turnSee(BASE_IDS)
         if seeMid != -1:
@@ -409,14 +418,13 @@ def maincycle():
     robot.sleep(0.5)
 
     # go to spaceship
-    seeSpaceship = turnSee([PORT_ID, STARBOARD_ID]) # Find either port or starboard
+    seeSpaceship = turnSee([PORT_ID, STARBOARD_ID], False) # Find either port or starboard
     if seeSpaceship != -1:
         #deposit in spaceship
         spaceshipDeposit()
     elif seeSpaceship == -1:
         #deposit in planet
         planetDeposit()
-
 
 
     print('turning')
