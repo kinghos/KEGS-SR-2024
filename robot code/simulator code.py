@@ -2,13 +2,16 @@ from sr.robot3 import *
 import math
 robot = Robot()
 
-#all marker ids of asteroids in an epic list
+# Constants
 ASTEROID_IDS = [i for i in range(150, 200)]
 MID_BASE_ID = robot.zone * 7 + 3
 BASE_IDS = [i for i in range(robot.zone * 7, (robot.zone + 1) * 7)]
+NUMBER_OF_WALL_MARKERS = 28
 EGG_ID = 110
 PORT_ID = robot.zone + 120
 STARBOARD_ID = robot.zone + 125
+
+# Globals
 collected = 0
 startTime = robot.time()
 
@@ -48,26 +51,6 @@ def fastTurn(clockwise: bool):
         robot.motor_board.motors[1].power = 0.1
 
 
-#look at all of the markers and only return those that are asteroids
-def firstAsteroid():
-    asteroids = list(filter(lambda marker : (marker.id in ASTEROID_IDS and isAsteroidRetrievable(marker)), robot.camera.see()))
-    if len(asteroids) > 0:
-        print(f'i see {asteroids[0]} first')
-        return asteroids[0]
-    else:
-        print('i dont see any asteroids')
-        return None
-
-def firstWallMarkers():
-    wallMarkers = list(filter(lambda marker : (marker.id in BASE_IDS), robot.camera.see()))
-    if len(wallMarkers) > 0:
-        print(f'i see {wallMarkers[0]} first')
-        return wallMarkers[0]
-    else:
-        print('i dont see any of our wall markers')
-        return None
-
-
 #find a desired target marker and return its information
 def look(targetid):
     markers = robot.camera.see()
@@ -78,7 +61,6 @@ def look(targetid):
     return None
 
 
-
 """
     target argument may be a list or a integer target id
     
@@ -87,14 +69,13 @@ def look(targetid):
 """
 #turn counter-clockwise until in line with target, slow turn to a degree of accuracy
 def turnSee(target):
-    if isinstance(target, int):
+    if isinstance(target, int): #If the argument passsed is an integer, convert to a list (this conversion allows for amalgamation of previous turnSee and turnSeeList)
         target = [target,]
-    #satisfy is the name of the temp variable i use for while loops, i will find a better way another time
-    satisfy = False
-
+    
+    facing_target = False
     robot.sleep(0.01)
     tempTime = robot.time()
-    while satisfy == False:
+    while facing_target == False:
         #if >10 sec elapsed then reset
         if (robot.time() - tempTime) > 10:
             print('times up')
@@ -112,9 +93,6 @@ def turnSee(target):
             robot.sleep(0.1)
             print(f'could not find {target}')
 
-        #need to find a way to make it deposit into area if it cannot find the spaceship
-        #something like if target == spaceship and done 360 == true: goToMidAndDeposItInArea()
-
         #next 2 elifs are for turning until within a certain angle of accuracy
         elif looktarget.position.horizontal_angle < -0.1:
             slowTurn(False)
@@ -129,7 +107,7 @@ def turnSee(target):
             print(looktarget.position.horizontal_angle)
             print(f'facing target ({target})')
             brake()
-            satisfy = True
+            facing_target = True
     return looktarget
 
 
@@ -143,17 +121,27 @@ def isAsteroidRetrievable(marker):
 
 
 def closestAsteroid():
+    print("Looking for closest asteroid")
     seen_opposite_left_id = False # If starting at zone 0, ids in question are 13 and 14
     seen_opposite_right_id = False # If starting at zone 0, id in question are 20 and 21 (consider 2 for contingency)
+    seen_base_middle_id = False # Added contingency
     asteroids = []
-    while (not seen_opposite_left_id) and (not seen_opposite_right_id):
-        fastTurn(False) # Could make it turn CW / CCW depending on which marker (left opposite or right opposite) it sees first
+    while (not seen_opposite_left_id and not seen_opposite_right_id) or seen_base_middle_id:
+        print(seen_opposite_left_id, seen_opposite_right_id, seen_base_middle_id)
+        if seen_opposite_left_id and not seen_opposite_right_id:
+            print("Turning CW")
+            fastTurn(True)
+        elif seen_opposite_right_id and not seen_opposite_left_id:
+            print("Turning CCW")
+            fastTurn(False)
         listmarkers = robot.camera.see()
         for marker in listmarkers:
-            if marker.id == ((robot.zone + 2) * 7) or marker.id == ((robot.zone + 2) * 7 - 1):
+            if marker.id == (((robot.zone + 2) % 4) * 7) or marker.id == (((robot.zone + 2) % 4) * 7 - 1) % NUMBER_OF_WALL_MARKERS:
                 seen_opposite_left_id = True
-            if marker.id == ((robot.zone + 3) * 7)  or marker.id == ((robot.zone + 2) * 7 - 1):
+            if marker.id == (((robot.zone + 3) % 4) * 7) or marker.id == (((robot.zone + 3) % 4) * 7 - 1) % NUMBER_OF_WALL_MARKERS:
                 seen_opposite_right_id = True
+            if marker.id == MID_BASE_ID:
+                seen_base_middle_id = True
             if marker.id in ASTEROID_IDS and isAsteroidRetrievable(marker):
                 asteroids.append(marker)
 
@@ -174,17 +162,15 @@ def closestAsteroid():
 
 def untilUnsee(target):
     print('untilunsee')
-    # reset the silly loop condition
-    satisfy = False
-    #epic loop condition
-    while satisfy == False:
+    lost_sight_of_target = False
+    while lost_sight_of_target == False:
         #set target asteroid information to temp variable, in case it cannot see it later
         moment = look(target.id)
         #if it doesnt see the target asteroid then stop and exit loop
-        if  moment == None:
+        if moment == None:
             robot.sleep(0.1)
             brake()
-            satisfy = True
+            lost_sight_of_target = True
         else:
             #keep moving
             robot.sleep(0.1)
@@ -205,9 +191,8 @@ def untilUnsee(target):
 
 
 def correctDrive(targetid, distance):
-    # reset funny loop condition
-    satisfy = False
-    while satisfy == False:
+    arrived_at_target = False
+    while arrived_at_target == False:
         #set target marker (ship) information to temp variable, in case it cannot see it later
         target = look(targetid)
         #if it doesnt see the marker than just break out, better to muck up once than to have an error and just obliterate the whole robot
@@ -219,7 +204,7 @@ def correctDrive(targetid, distance):
         #stop if it gets close to the ship
         elif target.position.distance < distance:
             brake()
-            satisfy = True
+            arrived_at_target = True
         else:
             #course correction
             if target.position.horizontal_angle < -0.1:
@@ -244,7 +229,7 @@ def spaceshipDeposit():
     # drive forward
     mediumDrive()
 
-    correctDrive(robot.zone + 120, 600)
+    correctDrive(PORT_ID, 600)
     print('finished correct driving')
 
     robot.sleep(0.2)
@@ -334,12 +319,15 @@ def eggChecker():
     seen_base_left_id = False # If starting at zone 0, ids in question are 27, 0, 1 (consider 3 for extra contingency)
     seen_base_right_id = False # If starting at zone 0, id in question are 5, 6, 7 (consider 3 for extra contingency)
     while (not seen_base_left_id) and (not seen_base_right_id):
-        fastTurn(False)
+        if seen_base_left_id and not seen_base_right_id:
+            fastTurn(True) 
+        elif seen_base_right_id and not seen_base_left_id:
+            fastTurn(False) 
         listmarkers = robot.camera.see()
         for marker in listmarkers:
-            if marker.id == ((robot.zone) * 7 - 1) or marker.id == ((robot.zone) * 7) or marker.id == ((robot.zone) * 7 + 1):
+            if marker.id == (BASE_IDS[0] - 1) % NUMBER_OF_WALL_MARKERS or marker.id == BASE_IDS[0] or marker.id == BASE_IDS[1]:
                 seen_base_left_id = True
-            if marker.id == ((robot.zone + 1) * 7) or marker.id == ((robot.zone + 1) * 7 - 1) or marker.id == ((robot.zone + 1) * 7 - 2):
+            if marker.id == (BASE_IDS[0] + 1) % NUMBER_OF_WALL_MARKERS or marker.id == BASE_IDS[-1] or marker.id == BASE_IDS[-2]:
                 seen_base_right_id = True
             if marker.id == EGG_ID: # Need to add some trigonometry to determine if it's actually in our base and not just near it
                 print("EGG IN BASE")
@@ -406,7 +394,7 @@ def maincycle():
     robot.servo_board.servos[2].position = -0.8
 
     # INSERT EGG CHECKING CODE HERE
-    eggChecker()
+    #eggChecker()
     
     seeLeftBase = turnSee(BASE_IDS[2])
     if seeLeftBase == -1:
