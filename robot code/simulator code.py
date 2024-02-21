@@ -23,8 +23,8 @@ def brake():
 
 #drive at a stable pace
 def mediumDrive():
-    robot.motor_board.motors[0].power = 0.3
-    robot.motor_board.motors[1].power = 0.3
+    robot.motor_board.motors[0].power = 0.4
+    robot.motor_board.motors[1].power = 0.4
 
 #drive backwards at x speed
 def backwardsDrive(speed):
@@ -57,7 +57,7 @@ def look(targetid):
     for marker in markers:
         if marker.id == targetid:
             return marker
-    print(f'couldnt find {targetid}')
+    print(f'look couldnt find {targetid}')
     return None
 
 
@@ -91,9 +91,18 @@ def turnSee(target, direction = False):
         if looktarget == None:
             fastTurn(direction)
             robot.sleep(0.1)
-            print(f'could not find {target}')
+            print(f'turnSee could not find {target}')
+            continue
 
         #next 2 elifs are for turning until within a certain angle of accuracy
+        if looktarget.position.horizontal_angle < -0.5:
+            fastTurn(False)
+            robot.sleep(0.05)
+            print(looktarget.position.horizontal_angle)
+        elif looktarget.position.horizontal_angle > 0.5:
+            fastTurn(False)
+            robot.sleep(0.05)
+            print(looktarget.position.horizontal_angle)
         elif looktarget.position.horizontal_angle < -0.1:
             slowTurn(False)
             robot.sleep(0.05)
@@ -128,9 +137,8 @@ def closestAsteroid():
     seen_base_middle_id = False # Added contingency
     asteroids = []
     clockwise_turn = False # which way to turn for scanning of arena
-    print("Left opposite:", (((robot.zone + 2) % 4) * 7), "OR", (((robot.zone + 2) % 4) * 7 - 1) % NUMBER_OF_WALL_MARKERS)
-    print("Left opposite:", (((robot.zone + 3) % 4) * 7), "OR", (((robot.zone + 3) % 4) * 7 - 1) % NUMBER_OF_WALL_MARKERS)
-    while not (seen_opposite_left_id and seen_opposite_right_id) or seen_base_middle_id:
+
+    while not (seen_opposite_left_id and seen_opposite_right_id) or not seen_base_middle_id:
 
         if seen_opposite_left_id and not seen_opposite_right_id:
             clockwise_turn = True
@@ -143,10 +151,10 @@ def closestAsteroid():
         for marker in listmarkers:
             if marker.id == (((robot.zone + 2) % 4) * 7) or marker.id == (((robot.zone + 2) % 4) * 7 - 1) % NUMBER_OF_WALL_MARKERS:
                 seen_opposite_left_id = True
-                print("Seen left opposite")
+                print("seen opposite left")
             if marker.id == (((robot.zone + 3) % 4) * 7) or marker.id == (((robot.zone + 3) % 4) * 7 - 1) % NUMBER_OF_WALL_MARKERS:
                 seen_opposite_right_id = True
-                print("Seen right opposite")
+                print("seen opposite right")
             if marker.id == MID_BASE_ID:
                 seen_base_middle_id = True
             if marker.id in ASTEROID_IDS and isAsteroidRetrievable(marker):
@@ -154,7 +162,7 @@ def closestAsteroid():
 
     brake()
     if len(asteroids) == 0:
-        print("couldnt find anything")
+        print("closestAsteroid couldnt find anything")
         return None
 
     closest = None
@@ -166,12 +174,12 @@ def closestAsteroid():
     return (closest, clockwise_turn)
 
 
-def untilUnsee(target):
+def untilUnsee(target_id):
     print('untilunsee')
     lost_sight_of_target = False
     while lost_sight_of_target == False:
         #set target asteroid information to temp variable, in case it cannot see it later
-        moment = look(target.id)
+        moment = look(target_id)
         #if it doesnt see the target asteroid then stop and exit loop
         if moment == None:
             robot.sleep(0.1)
@@ -202,7 +210,7 @@ def correctDrive(targetid, distance):
         target = look(targetid)
         #if it doesnt see the marker than just break out, better to muck up once than to have an error and just obliterate the whole robot
         if target == None:
-            print('dont see')
+            print('correctDrive can\'t find target marker')
             brake()
             turnSee(targetid)
         #stop if it gets close to the target
@@ -274,13 +282,9 @@ def spaceshipDeposit(spaceship_id):
     collected += 1
 
     robot.sleep(1)
-
     backwardsDrive(0.5)
-
     robot.sleep(1)
-
     brake()
-
     robot.servo_board.servos[2].position = -0.2
 
 
@@ -294,17 +298,7 @@ def planetDeposit():
 
     brake()
 
-    print('release')
-    robot.servo_board.servos[0].position = -1
-    robot.servo_board.servos[1].position = -1
-    global collected
-    collected += 1
-
-    robot.sleep(1)
-    backwardsDrive(0.5)
-    robot.sleep(1)
-    brake()
-    robot.servo_board.servos[2].position = -0.2
+    drop()
 
 
 # Returns a list of distances between the base markers and a target marker 
@@ -319,8 +313,50 @@ def baseMarkerDistanceFinder(target_marker):
     return marker_target_distances
 
 # TO DO
-def eggMover():
+def eggMover(direction_of_turn):
     print("Moving egg out of base")
+    
+    #get previous asteroid carried out of the way
+    drop()
+    fastTurn(True)
+    robot.sleep(0.7)
+    mediumDrive()
+    robot.sleep(1)
+    brake()
+    
+    turnSee(EGG_ID, direction_of_turn)
+    #move forward
+    mediumDrive()
+    #drive forward until no longer able to see asteroid
+    untilUnsee(EGG_ID)
+
+    grab()
+
+    # Do 10 or 24 from the POV of zone 0 (whichever is seen first)
+    neither_arena_marker_seen = True
+    while neither_arena_marker_seen:
+        arena_marker1 = look((((robot.zone + 1) % 4) * 7 + 3) % NUMBER_OF_WALL_MARKERS)
+        arena_marker2 = look((((robot.zone + 3) % 4) * 7 + 3) % NUMBER_OF_WALL_MARKERS)
+        if arena_marker1 == None and arena_marker2 == None:
+            fastTurn(True)
+        else:
+            neither_arena_marker_seen = False
+    print(arena_marker1)
+    print(arena_marker2)
+    if arena_marker1 == None:
+        chosen_arena_marker = arena_marker2
+    elif arena_marker2 == None:
+        chosen_arena_marker = arena_marker1
+    elif arena_marker1.position.distance > arena_marker2.position.distance:
+        chosen_arena_marker = arena_marker2
+    else: 
+        chosen_arena_marker = arena_marker1
+
+    correctDrive(chosen_arena_marker.id, 500)
+    robot.sleep(0.2)
+    drop()
+    robot.sleep(0.2)
+    reset()
     return
 
 """
@@ -350,11 +386,51 @@ def eggChecker():
                 if len(list(filter(lambda distance : distance < 300, baseMarkerDistanceFinder(marker)))) > 0:
                     print("EGG IN BASE!!!")
                     is_egg_in_base = True
+                    return (is_egg_in_base, clockwise_turn)
     return (is_egg_in_base, clockwise_turn)
 
 def reset():
     maincycle()
 
+
+def grab():
+    #lowering forklift here
+    robot.servo_board.servos[2].position = -1
+    robot.sleep(0.7)
+
+    #read distance to sensor using s o n a r woah
+    robot.arduino.pins[A4].mode = INPUT
+    distance_to_closest_from_grabber = robot.arduino.pins[A4].analog_read()
+
+    print(f'{distance_to_closest_from_grabber}m from sensor')
+    #sometimes this reads 5m even though the box is right in front of it :shrug:
+    #no clue why
+
+    if distance_to_closest_from_grabber == 0.5:
+        print('distance is 5m')
+        robot.sleep(0.01)
+
+    #grab box
+    robot.servo_board.servos[0].position = 0.6
+    robot.servo_board.servos[1].position = 0.6
+    robot.sleep(0.6)
+
+    #lift up with forklift a bit
+    robot.servo_board.servos[2].position = -0.8
+    robot.sleep(0.3)
+
+def drop():
+    print('release')
+    robot.servo_board.servos[0].position = -1
+    robot.servo_board.servos[1].position = -1
+    global collected
+    collected += 1
+
+    robot.sleep(1)
+    backwardsDrive(0.5)
+    robot.sleep(1)
+    brake()
+    robot.servo_board.servos[2].position = -0.2
 
 #choose asteroid, go to asteroid, go to base, go to spaceship, put asteroid in spaceship, repeat
 def maincycle():
@@ -388,39 +464,16 @@ def maincycle():
     mediumDrive()
 
     #drive forward until no longer able to see asteroid
-    untilUnsee(firstasteroid)
+    untilUnsee(firstasteroid.id)
     
-    #lowering forklift here
-    robot.servo_board.servos[2].position = -1
-    robot.sleep(0.7)
-
-    #read distance to sensor using s o n a r woah
-    robot.arduino.pins[A4].mode = INPUT
-    distance_to_closest_from_grabber = robot.arduino.pins[A4].analog_read()
-
-    print(f'{distance_to_closest_from_grabber}m from sensor')
-    #sometimes this reads 5m even though the box is right in front of it :shrug:
-    #no clue why
-
-    if distance_to_closest_from_grabber == 0.5:
-        print('distance is 5m')
-        robot.sleep(0.01)
-
-    #grab box
-    robot.servo_board.servos[0].position = 0.6
-    robot.servo_board.servos[1].position = 0.6
-    robot.sleep(0.6)
-
-    #lift up with forklift a bit
-    robot.servo_board.servos[2].position = -0.8
-    robot.sleep(0.3)
+    grab()
 
     egg_info = eggChecker()
     is_egg_in_base = egg_info[0]
     egg_direction_of_turn = not egg_info[1]
 
     if is_egg_in_base:
-        eggMover()
+        eggMover(egg_direction_of_turn)
     
     seeLeftBase = turnSee(BASE_IDS[2], egg_direction_of_turn)
     if seeLeftBase == -1:
@@ -430,7 +483,6 @@ def maincycle():
     else:
         print(f'going to {BASE_IDS[2]} (base)')
         correctDrive(BASE_IDS[2], 500)
-
 
     robot.sleep(0.2)
 
