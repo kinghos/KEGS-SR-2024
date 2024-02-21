@@ -104,8 +104,7 @@ def turnSee(target, direction = False):
             print(looktarget.position.horizontal_angle)
         #is now facing the target, stop turning and end loop
         else:
-            print(looktarget.position.horizontal_angle)
-            print(f'facing target ({target})')
+            print(f'facing target ({target}) \t horiz angle: {looktarget.position.horizontal_angle}')
             brake()
             facing_target = True
     return looktarget
@@ -119,7 +118,10 @@ def isAsteroidRetrievable(marker):
         return False
     return True
 
-
+"""
+  Returns closest marker and the direction the robot is currently turning to scan the arena
+   => return (closest, clockwise_turn)
+"""
 def closestAsteroid():
     seen_opposite_left_id = False # If starting at zone 0, ids in question are 13 and 14
     seen_opposite_right_id = False # If starting at zone 0, id in question are 20 and 21 (consider 2 for contingency)
@@ -189,8 +191,7 @@ def untilUnsee(target):
                 print(moment.position.horizontal_angle)
             else:
                 #keep going at 0.3 power and print current angle
-                print(moment.position.horizontal_angle)
-                print(f'facing target ({moment.id})')
+                print(f'facing target ({moment.id}) \t horiz angle: {moment.position.horizontal_angle}')
                 mediumDrive()
 
 
@@ -306,30 +307,50 @@ def planetDeposit():
     robot.servo_board.servos[2].position = -0.2
 
 
+# Returns a list of distances between the base markers and a target marker 
+def baseMarkerDistanceFinder(target_marker):
+    marker_target_distances = []
+    for base_id in BASE_IDS:
+        base_marker = look(base_id)
+        if base_marker == None:
+            continue
+        distance_to_base_id = base_marker.position.distance
+        marker_target_distances.append(abs(distance_to_base_id - target_marker.position.distance))
+    return marker_target_distances
+
+# TO DO
 def eggMover():
     print("Moving egg out of base")
     return
 
-
-# TO DOOOOOOOOOOOOOOOOOOOOOOOO
+"""
+  Returns whether egg is arena and the direction the robot is currently turning to scan the base
+   => return (is_egg_in_base, clockwise_turn)
+"""
 def eggChecker():
     seen_base_left_id = False # If starting at zone 0, ids in question are 27, 0, 1 (consider 3 for extra contingency)
     seen_base_right_id = False # If starting at zone 0, id in question are 5, 6, 7 (consider 3 for extra contingency)
+    is_egg_in_base = False
     while not (seen_base_left_id and seen_base_right_id):
+        clockwise_turn = False # which way to turn for scanning of arena
         if seen_base_left_id and not seen_base_right_id:
-            fastTurn(True) 
+            clockwise_turn = True
         elif seen_base_right_id and not seen_base_left_id:
-            fastTurn(False) 
+            clockwise_turn = False
+        fastTurn(clockwise_turn)
+
         listmarkers = robot.camera.see()
         for marker in listmarkers:
             if marker.id == (BASE_IDS[0] - 1) % NUMBER_OF_WALL_MARKERS or marker.id == BASE_IDS[0] or marker.id == BASE_IDS[1]:
                 seen_base_left_id = True
             if marker.id == (BASE_IDS[0] + 1) % NUMBER_OF_WALL_MARKERS or marker.id == BASE_IDS[-1] or marker.id == BASE_IDS[-2]:
                 seen_base_right_id = True
-            if marker.id == EGG_ID: # Need to add some trigonometry to determine if it's actually in our base and not just near it
-                print("EGG IN BASE")
-                eggMover()
-
+            if marker.id == EGG_ID:
+                # Check if the egg is near our base using difference in distances between each base marker and the egg marker
+                if len(list(filter(lambda distance : distance < 300, baseMarkerDistanceFinder(marker)))) > 0:
+                    print("EGG IN BASE!!!")
+                    is_egg_in_base = True
+    return (is_egg_in_base, clockwise_turn)
 
 def reset():
     maincycle()
@@ -347,7 +368,7 @@ def maincycle():
     #set a target asteroid to pick up
     asteroid_info = closestAsteroid()
     firstasteroid = asteroid_info[0]
-    direction_of_turn = not asteroid_info[1]
+    asteroid_direction_of_turn = not asteroid_info[1]
 
     #if it didnt see an asteroid, it will turn counter-clockwise until it does and set that as its target
     while firstasteroid == None:
@@ -356,12 +377,12 @@ def maincycle():
         robot.sleep(0.1)
         asteroid_info = closestAsteroid()
         firstasteroid = asteroid_info[0]
-        direction_of_turn = not asteroid_info[1] #if we turned CW to scan the arena, we turn CCW to find the asteroid
-    print(f'I have set {firstasteroid.id} as the target asteroid. To reach this asteroid I will turn {direction_of_turn}')
+        asteroid_direction_of_turn = not asteroid_info[1] #if we turned CW to scan the arena, we turn CCW to find the asteroid
+    print(f'I have set {firstasteroid.id} as the target asteroid. To reach this asteroid I will turn clockwise = {asteroid_direction_of_turn}')
     print(f'The target asteroid has these stats: {firstasteroid}')
 
     #turn until it is in line with the target asteroid
-    turnSee(firstasteroid.id, direction_of_turn)
+    turnSee(firstasteroid.id, asteroid_direction_of_turn)
 
     #move forward
     mediumDrive()
@@ -394,10 +415,14 @@ def maincycle():
     robot.servo_board.servos[2].position = -0.8
     robot.sleep(0.3)
 
-    # INSERT EGG CHECKING CODE HERE
-    #eggChecker()
+    egg_info = eggChecker()
+    is_egg_in_base = egg_info[0]
+    egg_direction_of_turn = not egg_info[1]
+
+    if is_egg_in_base:
+        eggMover()
     
-    seeLeftBase = turnSee(BASE_IDS[2], True)
+    seeLeftBase = turnSee(BASE_IDS[2], egg_direction_of_turn)
     if seeLeftBase == -1:
         seeMid = turnSee(BASE_IDS)
         if seeMid != -1:
@@ -415,14 +440,7 @@ def maincycle():
     
     # For each base marker seen, calculate distance between the base marker and the port marker. 
     # If all of these distances are over 300, then the spaceship is considered out of our base
-    marker_spaceship_distances = []
-    for base_id in BASE_IDS:
-        base_marker = look(base_id)
-        if base_marker == None:
-            continue
-        distance_to_base_id = base_marker.position.distance
-        marker_spaceship_distances.append(abs(distance_to_base_id - spaceship_marker.position.distance))
-
+    marker_spaceship_distances = baseMarkerDistanceFinder(spaceship_marker)
     marker_spaceship_distances_under_300 = list(filter(lambda distance : distance < 300, marker_spaceship_distances))
     print("Distance between base marker(s) and spaceship:", marker_spaceship_distances_under_300)
     if seeSpaceship == -1 or len(marker_spaceship_distances_under_300) == 0: # If can't find spaceship or it is too far from second base marker
