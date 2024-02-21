@@ -203,9 +203,8 @@ def correctDrive(targetid, distance):
         if target == None:
             print('dont see')
             brake()
-            #break - just waits now, maybe put a turnSee
             turnSee(targetid)
-        #stop if it gets close to the ship
+        #stop if it gets close to the target
         elif target.position.distance < distance:
             brake()
             arrived_at_target = True
@@ -227,13 +226,13 @@ def correctDrive(targetid, distance):
 
 
 
-def spaceshipDeposit():
+def spaceshipDeposit(spaceship_id):
     print('going to spaceship')
 
     # drive forward
     mediumDrive()
 
-    correctDrive(PORT_ID, 600)
+    correctDrive(spaceship_id, 600)
     print('finished correct driving')
 
     robot.sleep(0.2)
@@ -286,14 +285,11 @@ def spaceshipDeposit():
 
 def planetDeposit():
     print("going to planet for deposition")
-    #turn and drive a bit to avoid obscuring the MID_BASE_ID marker
-    fastTurn(True)
-    robot.sleep(1)
-    # drive a little forward
-    robot.motor_board.motors[0].power = 0.2
-    robot.motor_board.motors[1].power = 0.2
 
-    robot.sleep(1.4)
+    for i in range(3,7):
+        if turnSee(BASE_IDS[i], True) != -1:
+            correctDrive(BASE_IDS[i], 500)
+            break
 
     brake()
 
@@ -304,13 +300,9 @@ def planetDeposit():
     collected += 1
 
     robot.sleep(1)
-
     backwardsDrive(0.5)
-
     robot.sleep(1)
-
     brake()
-
     robot.servo_board.servos[2].position = -0.2
 
 
@@ -357,7 +349,6 @@ def maincycle():
     firstasteroid = asteroid_info[0]
     direction_of_turn = not asteroid_info[1]
 
-
     #if it didnt see an asteroid, it will turn counter-clockwise until it does and set that as its target
     while firstasteroid == None:
         print('I did not see an asteroid to target')
@@ -401,6 +392,7 @@ def maincycle():
 
     #lift up with forklift a bit
     robot.servo_board.servos[2].position = -0.8
+    robot.sleep(0.3)
 
     # INSERT EGG CHECKING CODE HERE
     #eggChecker()
@@ -415,17 +407,28 @@ def maincycle():
         correctDrive(BASE_IDS[2], 500)
 
 
-    robot.sleep(0.5)
+    robot.sleep(0.2)
 
     # go to spaceship
-    seeSpaceship = turnSee([PORT_ID, STARBOARD_ID], False) # Find either port or starboard
-    if seeSpaceship != -1:
-        #deposit in spaceship
-        spaceshipDeposit()
-    elif seeSpaceship == -1:
-        #deposit in planet
-        planetDeposit()
+    seeSpaceship = turnSee([PORT_ID, STARBOARD_ID], False)
+    spaceship_marker = look(seeSpaceship.id)
+    
+    # For each base marker seen, calculate distance between the base marker and the port marker. 
+    # If all of these distances are over 300, then the spaceship is considered out of our base
+    marker_spaceship_distances = []
+    for base_id in BASE_IDS:
+        base_marker = look(base_id)
+        if base_marker == None:
+            continue
+        distance_to_base_id = base_marker.position.distance
+        marker_spaceship_distances.append(abs(distance_to_base_id - spaceship_marker.position.distance))
 
+    marker_spaceship_distances_under_300 = list(filter(lambda distance : distance < 300, marker_spaceship_distances))
+    print("Distance between base marker(s) and spaceship:", marker_spaceship_distances_under_300)
+    if seeSpaceship == -1 or len(marker_spaceship_distances_under_300) == 0: # If can't find spaceship or it is too far from second base marker
+        planetDeposit()
+    else:
+        spaceshipDeposit(spaceship_marker.id)
 
     print('turning')
     fastTurn(False)
