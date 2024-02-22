@@ -149,7 +149,9 @@ def closestAsteroid():
     asteroids = []
     clockwise_turn = False  # which way to turn for scanning of arena
 
-    while not (seen_opposite_left_id and seen_opposite_right_id) or not seen_base_middle_id:
+    while not ((seen_opposite_left_id and seen_opposite_right_id) or seen_base_middle_id):
+        print(f'{str(seen_opposite_left_id)} {str(seen_opposite_right_id)} {str(seen_base_middle_id)}')
+        print('boo')
 
         if seen_opposite_left_id and not seen_opposite_right_id:
             clockwise_turn = True
@@ -535,7 +537,17 @@ def maincycle():
 
     # go to spaceship
     seeSpaceship = turnSee([PORT_ID, STARBOARD_ID], False)
-    spaceship_marker = look(seeSpaceship.id)
+    if seeSpaceship != -1:
+        spaceship_marker = look(seeSpaceship.id)
+    else:
+        print('depositing in planet')
+        planetDeposit()
+
+        print('turning')
+        fastTurn(False)
+
+        robot.sleep(0.9)
+        reset()
 
     '''# For each base marker seen, calculate distance between the base marker and the port marker. 
     # If all of these distances are over 300, then the spaceship is considered out of our base
