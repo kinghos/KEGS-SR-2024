@@ -45,11 +45,11 @@ def backwardsDrive(speed):
 # slow turning, clockwise is true, counter clockwise is false
 def slowTurn(clockwise: bool):
     if clockwise == True:
-        robot.motor_board.motors[0].power = 0.25
-        robot.motor_board.motors[1].power = -0.25
+        robot.motor_board.motors[0].power = 0.05
+        robot.motor_board.motors[1].power = -0.05
     else:
-        robot.motor_board.motors[0].power = -0.25
-        robot.motor_board.motors[1].power = 0.25
+        robot.motor_board.motors[0].power = -0.05
+        robot.motor_board.motors[1].power = 0.05
 
 
 # fast turning, clockwise is true, counter clockwise is false
@@ -103,7 +103,6 @@ def turnSee(target, direction=False):
         target = [target, ]
 
     facing_target = False
-    robot.sleep(0.01)
     tempTime = robot.time()
     while facing_target == False:
         # if >5 sec elapsed then reset
@@ -120,7 +119,6 @@ def turnSee(target, direction=False):
 
         if looktarget == None:
             fastTurn(direction)
-            robot.sleep(0.1)
             print(f'turnSee could not find {target}')
             continue
 
@@ -280,7 +278,7 @@ def spaceshipDeposit(spaceship_id):
     robot.motor_board.motors[0].power = 0.2
     robot.motor_board.motors[1].power = 0.2
 
-    robot.sleep(1.4)
+    robot.sleep(1.5)
 
     brake()
     global collected
@@ -411,6 +409,7 @@ def eggMover(direction_of_turn):
     reset()
 
 
+# TO DO: FIX
 """
   Returns whether egg is arena and the direction the robot is currently turning to scan the base
    => return (is_egg_in_base, clockwise_turn)
@@ -510,8 +509,7 @@ def maincycle():
     # if it didnt see an asteroid, it will turn counter-clockwise until it does and set that as its target
     while asteroid_info == None:
         print('I did not see an asteroid to target')
-        slowTurn(False)
-        robot.sleep(0.1)
+        # TO DO: DO SOMETHING BETTER THAN JUST RUN FUNCTION AGAIN
         asteroid_info = closestAsteroid()
 
     firstasteroid = asteroid_info[0]
@@ -538,13 +536,16 @@ def maincycle():
 
     grab()
 
+    """
     egg_info = eggChecker()
     is_egg_in_base = egg_info[0]
     egg_direction_of_turn = not egg_info[1]
 
     if is_egg_in_base:
         eggMover(egg_direction_of_turn)
+    """
 
+    egg_direction_of_turn = False
 
     seeLeftBase = turnSee(BASE_IDS[2], egg_direction_of_turn)
     if seeLeftBase == -1: # If it can't see base marker 2
