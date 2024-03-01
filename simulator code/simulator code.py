@@ -597,8 +597,9 @@ def maincycle():
     marker_spaceship_distances_under_300 = list(filter(lambda distance : distance < 300, marker_spaceship_distances))
 
     print("Distance between base marker(s) and spaceship under 300:", marker_spaceship_distances_under_300)
-    
-    if seeSpaceship == -1 or len(marker_spaceship_distances_under_300) == 0: # If can't find spaceship or it is too far from second base marker
+
+    # if we can't see spaceship or it is too far away from base & from ourselves, then deposit in planet
+    if seeSpaceship == -1 or (len(marker_spaceship_distances_under_300) == 0 and spaceship_marker.position.distance > 1000): # If can't find spaceship or it is too far from second base marker
     #if seeSpaceship == -1 or spaceship_marker.position.distance > 1000:  # If can't find spaceship or if it is too far from robot
         print(f'spaceship distance {spaceship_marker.position.distance}')
         if planetDeposit() == -1:
