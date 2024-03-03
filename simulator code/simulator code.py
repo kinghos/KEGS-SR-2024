@@ -154,11 +154,11 @@ def turnSee(target, direction=False, accurate=True):
             threshold = 0.05
         else:
             threshold = 0.3
-        print(f"turning to {threshold} accuracy")
+        print(f"turning to {threshold} accuracy", end='\t')
         if accurateTurn(looktarget, threshold):
             brake()
             facing_target = True
-    print(f'facing target ({target}) \t horiz angle: {looktarget.position.horizontal_angle}\t look: {look(looktarget)}')
+    print(f'facing target ({target}) \t horiz angle: {looktarget.position.horizontal_angle}')
     return looktarget
 
 
@@ -309,14 +309,25 @@ def spaceshipDeposit(spaceship_id):
     print('raising')
     robot.servo_board.servos[2].position = 1
 
+    speedDrive(0.2)
+
     # TO DO: USE ULTRASOUND FOR PROPER DEPOSITION INSTEAD OF RELYING ON SLEEP
+    robot.arduino.pins[A0].mode = INPUT
+    distance_to_closest_from_grabber = min(robot.arduino.pins[A0].analog_read(), robot.arduino.pins[A1].analog_read()) # use two sensors for redundancy
+    while distance_to_closest_from_grabber > 0.15:
+        distance_to_closest_from_grabber = min(robot.arduino.pins[A0].analog_read(), robot.arduino.pins[A1].analog_read())
+        print(f'{distance_to_closest_from_grabber}m from front left sensor')
+    
+    brake()
+    robot.sleep(1)
+    """
     # drive a little forward
     speedDrive(0.2)
     robot.sleep(1)
-    brake()
-    robot.sleep(1)
+    
     speedDrive(0.2)
     robot.sleep(0.75)
+    """
 
     global collected
     # efficient stacking
@@ -456,6 +467,7 @@ def eggChecker():
             clockwise_turn = True
         elif seen_base_right_id and not seen_base_left_id:
             clockwise_turn = False
+        print(f"turning clockwise = {clockwise_turn}")
         fastTurn(clockwise_turn)
 
         listmarkers = robot.camera.see()
@@ -570,9 +582,9 @@ def maincycle():
 
     if is_egg_in_base:
         eggMover(egg_direction_of_turn)
-    
-    egg_direction_of_turn = False
+
     brake()
+    print(f"TURNING clockwise = {egg_direction_of_turn}")
     seeLeftBase = turnSee(BASE_IDS[2], egg_direction_of_turn)
     if seeLeftBase == -1: # If it can't see base marker 2
         see_first_base = turnSee(BASE_IDS) # Then find the first base marker it does see
