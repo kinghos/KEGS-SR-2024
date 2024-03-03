@@ -25,8 +25,8 @@ def brake():
 
 
 # drive at a stable pace
-# TO DO: RAMP UP SPEED GRADUALLY FOR MEDIUM DRIVE
 def mediumDrive():
+    print(f"Driving at med power")
     robot.motor_board.motors[0].power = 0.4
     robot.motor_board.motors[1].power = 0.4
 
@@ -34,6 +34,12 @@ def speedDrive(speed):
     robot.motor_board.motors[0].power = speed
     robot.motor_board.motors[1].power = speed
 
+def rampDrive(ramp_speed_start, speed=1):
+    power = (robot.time() - ramp_speed_start) * 2 # Ramp speed up
+    if power >= speed:
+        speedDrive(speed)
+    else:
+        speedDrive(power)
 
 # drive backwards at x speed
 def backwardsDrive(speed):
@@ -44,11 +50,11 @@ def backwardsDrive(speed):
 # slow turning, clockwise is true, counter clockwise is false
 def slowTurn(clockwise: bool):
     if clockwise == True:
-        robot.motor_board.motors[0].power = 0.08
-        robot.motor_board.motors[1].power = -0.08
+        robot.motor_board.motors[0].power = 0.01
+        robot.motor_board.motors[1].power = -0.01
     else:
-        robot.motor_board.motors[0].power = -0.08
-        robot.motor_board.motors[1].power = 0.08
+        robot.motor_board.motors[0].power = -0.01
+        robot.motor_board.motors[1].power = 0.01
 
 def mediumTurn(clockwise: bool):
     if clockwise == True:
@@ -79,27 +85,30 @@ def look(targetid):
     return None
 
 
-# TO DO: Find a way to make this more efficient - atm robot ends up stopping and turning every 2 seconds just to be within the 0.1 threshold - 
-#   make it turn more accurately the first time function is called
-
 # Returns True if facing target, False if not
-def accurateTurn(target):
+# Default value of 0.15 for threshold, in which case it uses mediumTurn
+def accurateTurn(target, threshold = 0.15):
+    if threshold > 0.1:
+        med_threshold = threshold
+    else:
+        med_threshold = 2*threshold
+
     if target.position.horizontal_angle < -0.5:
         fastTurn(False)
         print(target.position.horizontal_angle)
     elif target.position.horizontal_angle > 0.5:
         fastTurn(True)
         print(target.position.horizontal_angle)
-    elif target.position.horizontal_angle < -0.17:
+    elif target.position.horizontal_angle < -med_threshold:
         mediumTurn(False)
         print(target.position.horizontal_angle)
-    elif target.position.horizontal_angle > 0.17:
+    elif target.position.horizontal_angle > med_threshold:
         mediumTurn(True)
         print(target.position.horizontal_angle)
-    elif target.position.horizontal_angle < -0.1:
+    elif target.position.horizontal_angle < -threshold:
         slowTurn(False)
         print(target.position.horizontal_angle)
-    elif target.position.horizontal_angle > 0.1:
+    elif target.position.horizontal_angle > threshold:
         slowTurn(True)
         print(target.position.horizontal_angle)
     else:
@@ -114,7 +123,8 @@ def accurateTurn(target):
     ⇒ returns -1 for 'times up'
     ⇒ returns marker info for success
 """
-def turnSee(target, direction=False):
+def turnSee(target, direction=False, accurate=True):
+    robot.sleep(0.05) # Allow for braking to have settled the robot
     if isinstance(target, int):  # If the argument passsed is an integer, convert to a list (this conversion allows for amalgamation of previous turnSee and turnSeeList)
         target = [target, ]
 
@@ -130,6 +140,7 @@ def turnSee(target, direction=False):
         for item in target:
             looktarget = look(item)
             if looktarget != None:
+                brake()
                 break
 
         if looktarget == None:
@@ -138,10 +149,16 @@ def turnSee(target, direction=False):
             continue
 
         # Accurately turn to target. If facing, stop turning & end loop
-        if accurateTurn(looktarget):
+        # The first time you turn, turn more accurately to prevent robot stopping and turning every second just to be within the 0.1 threshold
+        if accurate:
+            threshold = 0.05
+        else:
+            threshold = 0.3
+        print(f"turning to {threshold} accuracy")
+        if accurateTurn(looktarget, threshold):
             brake()
             facing_target = True
-    print(f'facing target ({target}) \t horiz angle: {looktarget.position.horizontal_angle}')
+    print(f'facing target ({target}) \t horiz angle: {looktarget.position.horizontal_angle}\t look: {look(looktarget)}')
     return looktarget
 
 
@@ -228,16 +245,12 @@ def untilUnsee(target_id):
             lost_sight_of_target = True
             return
         elif accurateTurn(moment): # Course correction
+            if ramp_speed_start == None:
+                ramp_speed_start = robot.time()
             if moment.position.distance > 500:
-                if ramp_speed_start == None:
-                    ramp_speed_start = robot.time()
-                power = (robot.time() - ramp_speed_start) * 4 + 0.1 # Ramp speed up
-                if power >= 1:
-                    speedDrive(1)
-                else:
-                    speedDrive(power)
+                rampDrive(ramp_speed_start, 1)
             else:
-                mediumDrive()
+                rampDrive(ramp_speed_start, 0.4)
         else: # If had to turn, then reset ramping
             ramp_speed_start = None
 
@@ -272,17 +285,13 @@ def correctDrive(targetid, distance):
             brake()
             arrived_at_target = True
         elif accurateTurn(target): # Course correction
-            print(f'{target.position.distance}mm to {target.id}')
+            if ramp_speed_start == None:
+                ramp_speed_start = robot.time()
             if target.position.distance > 1.5*distance:
-                if ramp_speed_start == None:
-                    ramp_speed_start = robot.time()
-                power = (robot.time() - ramp_speed_start) * 4 + 0.1 # Ramp speed up
-                if power >= 1:
-                    speedDrive(1)
-                else:
-                    speedDrive(power)
+                rampDrive(ramp_speed_start, 1)
             else:
-                mediumDrive()
+                rampDrive(ramp_speed_start, 0.4)
+            print(f'{target.position.distance}mm to {target.id}, power max = {(robot.time() - ramp_speed_start)*4} or lower')
         else:  # If had to turn, then reset ramping
             ramp_speed_start = None
 
@@ -291,9 +300,7 @@ def correctDrive(targetid, distance):
 def spaceshipDeposit(spaceship_id):
     print('going to spaceship')
 
-    # drive forward
-    # mediumDrive()
-
+    turnSee(spaceship_id, True, True)
     if correctDrive(spaceship_id, 600) == -1:
         return -1
     print('finished correct driving to spaceship')
@@ -364,7 +371,7 @@ def baseMarkerDistanceFinder(target_marker):
         if (robot.time() - tempTime) > 10:
             print('times up')
             return -1
-        turnSee(BASE_IDS)
+        turnSee(BASE_IDS, False, False)
         for base_id in BASE_IDS:
             base_marker = look(base_id)
             if base_marker == None:
@@ -479,11 +486,11 @@ def grab():
     robot.servo_board.servos[2].position = -1 #lower
     robot.servo_board.servos[0].position = 0.3 #grab
     robot.servo_board.servos[1].position = 0.3 #grab
-    robot.sleep(0.15)
+    robot.sleep(0.1)
     robot.servo_board.servos[0].position = 0
     robot.servo_board.servos[1].position = 0
     robot.servo_board.servos[2].position = -1 #lower
-    robot.sleep(0.75)
+    robot.sleep(0.8)
 
     # read distance to sensor
     robot.arduino.pins[A4].mode = INPUT
@@ -498,7 +505,7 @@ def grab():
         distance_to_closest_from_grabber = robot.arduino.pins[A4].analog_read()
         print(f'{distance_to_closest_from_grabber}m from sensor')
     brake()
-    robot.sleep(0.2)
+    robot.sleep(0.25)
     
     # lift up with forklift a bit
     robot.servo_board.servos[2].position = -0.8
@@ -556,16 +563,16 @@ def maincycle():
     untilUnsee(firstasteroid.id)
 
     grab()
-
+    
     egg_info = eggChecker()
     is_egg_in_base = egg_info[0]
     egg_direction_of_turn = not egg_info[1]
 
     if is_egg_in_base:
         eggMover(egg_direction_of_turn)
-
+    
     egg_direction_of_turn = False
-
+    brake()
     seeLeftBase = turnSee(BASE_IDS[2], egg_direction_of_turn)
     if seeLeftBase == -1: # If it can't see base marker 2
         see_first_base = turnSee(BASE_IDS) # Then find the first base marker it does see
@@ -590,7 +597,7 @@ def maincycle():
     robot.sleep(0.2)
 
     # go to spaceship
-    seeSpaceship = turnSee([PORT_ID, STARBOARD_ID], False)
+    seeSpaceship = turnSee([PORT_ID, STARBOARD_ID], False, False)
     if seeSpaceship != -1: # If spaceship has been found
         spaceship_marker = look(seeSpaceship.id)
     else: # If spaceship not found
