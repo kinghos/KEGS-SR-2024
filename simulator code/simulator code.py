@@ -229,12 +229,18 @@ def closestAsteroid():
     return (closest, clockwise_turn)
 
 
-# ⇒ No return value
+# ⇒ returns -1 for times up
 def untilUnsee(target_id):
     print('untilunsee')
     lost_sight_of_target = False
     ramp_speed_start = None
+    tempTime = robot.time()
     while lost_sight_of_target == False:
+
+        if (robot.time() - tempTime) > 5:
+            print('times up')
+            return -1
+        
         # set target asteroid information to temp variable, in case it cannot see it later
         moment = look(target_id)
         # if it doesnt see the target asteroid then stop and exit loop
@@ -252,6 +258,7 @@ def untilUnsee(target_id):
                 rampDrive(ramp_speed_start, 0.4)
         else: # If had to turn, then reset ramping
             ramp_speed_start = None
+    return
 
 
 # Returns -1 for a fail caused by targetid disappearing
@@ -591,7 +598,11 @@ def maincycle():
         return
 
     # drive forward until no longer able to see asteroid
-    untilUnsee(firstasteroid.id)
+    if untilUnsee(firstasteroid.id) == -1:
+        backwardsDrive(0.5)
+        robot.sleep(0.9)
+        brake()
+        reset()
 
     grab()
     
