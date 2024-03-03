@@ -243,7 +243,7 @@ def untilUnsee(target_id):
             brake()
             lost_sight_of_target = True
             return
-        elif accurateTurn(moment): # Course correction
+        elif accurateTurn(moment, 0.1): # Course correction
             if ramp_speed_start == None:
                 ramp_speed_start = robot.time()
             if moment.position.distance > 500:
@@ -357,13 +357,13 @@ def spaceshipDeposit(spaceship_id):
     if collected % 2 == 0:
         print('depositing to 1')
         mediumTurn(True)
-        robot.sleep(0.09)
+        robot.sleep(0.08)
         brake()
 
     else:
         print('depositing to 2')
         mediumTurn(False)
-        robot.sleep(0.09)
+        robot.sleep(0.08)
         brake()
 
     # fully open pincers
