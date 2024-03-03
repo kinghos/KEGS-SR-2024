@@ -176,7 +176,8 @@ def isAsteroidRetrievable(marker):
 """
   Returns closest marker and the direction the robot is currently turning to scan the arena
    => return (closest, clockwise_turn)
-   ⇒ returns None if it can't find anything or if times up
+   ⇒ returns None if it can't find anything
+   ⇒ returns -1 if times up
 """
 def closestAsteroid():
     seen_opposite_left_id = False  # If starting at zone 0, ids in question are 13 and 14
@@ -190,7 +191,7 @@ def closestAsteroid():
         
         if (robot.time() - tempTime) > 5:
             print('times up')
-            return None
+            return -1
         
         if seen_opposite_left_id and not seen_opposite_right_id:
             clockwise_turn = True
@@ -206,11 +207,9 @@ def closestAsteroid():
             if marker.id == (((robot.zone + 2) % 4) * 7) or marker.id == (
                     ((robot.zone + 2) % 4) * 7 - 1) % NUMBER_OF_WALL_MARKERS:
                 seen_opposite_left_id = True
-                print("seen opposite left")
             if marker.id == (((robot.zone + 3) % 4) * 7) or marker.id == (
                     ((robot.zone + 3) % 4) * 7 - 1) % NUMBER_OF_WALL_MARKERS:
                 seen_opposite_right_id = True
-                print("seen opposite right")
             if marker.id == MID_BASE_ID:
                 seen_base_middle_id = True
             if marker.id in ASTEROID_IDS and isAsteroidRetrievable(marker):
@@ -291,10 +290,34 @@ def correctDrive(targetid, distance):
                 rampDrive(ramp_speed_start, 1)
             else:
                 rampDrive(ramp_speed_start, 0.4)
-            print(f'{target.position.distance}mm to {target.id}, power max = {(robot.time() - ramp_speed_start)*4} or lower')
+            # print(f'{target.position.distance}mm to {target.id}, power max = {(robot.time() - ramp_speed_start)*4} or lower')
         else:  # If had to turn, then reset ramping
             ramp_speed_start = None
 
+
+# receives list of pins and target distance
+# returns -1 if 5m away
+def ultrasoundDrive(pins, distance):
+    for pin in pins:
+        robot.arduino.pins[pin].mode = INPUT
+    distance_to_pins = min([robot.arduino.pins[analog_pin].analog_read() for analog_pin in pins])
+    tempTime = robot.time()
+    prev_distance_to_pins = 0
+    while distance_to_pins > distance:
+        if (robot.time() - tempTime) > 3:
+            print('times up')
+            return -1
+        if (robot.time() - tempTime) > 1 and (distance_to_pins - prev_distance_to_pins) < 0.01:
+            print('distance not changing')
+            return -1
+        distance_to_pins = min([robot.arduino.pins[analog_pin].analog_read() for analog_pin in pins])
+        print(f"{distance_to_pins}m away from {pins}")
+        robot.sleep(0.1)
+        if distance_to_pins == 0.5:
+            print("0.5m away!")
+            return -1
+        prev_distance_to_pins = distance_to_pins
+    return
 
 # ⇒ Returns -1 if correctdrive fails
 def spaceshipDeposit(spaceship_id):
@@ -311,23 +334,22 @@ def spaceshipDeposit(spaceship_id):
 
     speedDrive(0.2)
 
-    # TO DO: USE ULTRASOUND FOR PROPER DEPOSITION INSTEAD OF RELYING ON SLEEP
-    robot.arduino.pins[A0].mode = INPUT
-    distance_to_closest_from_grabber = min(robot.arduino.pins[A0].analog_read(), robot.arduino.pins[A1].analog_read()) # use two sensors for redundancy
-    while distance_to_closest_from_grabber > 0.15:
-        distance_to_closest_from_grabber = min(robot.arduino.pins[A0].analog_read(), robot.arduino.pins[A1].analog_read())
-        print(f'{distance_to_closest_from_grabber}m from front left sensor')
+    if ultrasoundDrive([A0, A1], 0.6) == -1: # drive to 0.6m away from spaceship using bottom sensors
+        print("ultrasound failed")
+        drop()
+        reset()
+        return
     
     brake()
-    robot.sleep(1)
-    """
-    # drive a little forward
-    speedDrive(0.2)
-    robot.sleep(1)
-    
-    speedDrive(0.2)
-    robot.sleep(0.75)
-    """
+    robot.sleep(0.8)
+    speedDrive(0.15)
+
+    if ultrasoundDrive([A0, A1], 0.15) == -1: # drive to 0.45m away from spaceship using bottom sensors
+        print("ultrasound failed")
+        drop()
+        reset()
+        return
+    brake()
 
     global collected
     # efficient stacking
@@ -335,13 +357,13 @@ def spaceshipDeposit(spaceship_id):
     if collected % 2 == 0:
         print('depositing to 1')
         mediumTurn(True)
-        robot.sleep(0.07)
+        robot.sleep(0.09)
         brake()
 
     else:
         print('depositing to 2')
         mediumTurn(False)
-        robot.sleep(0.07)
+        robot.sleep(0.09)
         brake()
 
     # fully open pincers
@@ -467,7 +489,6 @@ def eggChecker():
             clockwise_turn = True
         elif seen_base_right_id and not seen_base_left_id:
             clockwise_turn = False
-        print(f"turning clockwise = {clockwise_turn}")
         fastTurn(clockwise_turn)
 
         listmarkers = robot.camera.see()
@@ -496,27 +517,25 @@ def reset():
 def grab():
     # Lowering forklift and grabbing halfway at the same time for efficiency
     robot.servo_board.servos[2].position = -1 #lower
-    robot.servo_board.servos[0].position = 0.3 #grab
-    robot.servo_board.servos[1].position = 0.3 #grab
+    robot.servo_board.servos[0].position = 0.3 # prepare for grabbing
+    robot.servo_board.servos[1].position = 0.3 # prepare for grabbing
     robot.sleep(0.1)
     robot.servo_board.servos[0].position = 0
     robot.servo_board.servos[1].position = 0
     robot.servo_board.servos[2].position = -1 #lower
     robot.sleep(0.8)
 
-    # read distance to sensor
-    robot.arduino.pins[A4].mode = INPUT
-    distance_to_closest_from_grabber = robot.arduino.pins[A4].analog_read()
-
     # grab box
-    speedDrive(0.1)
+    speedDrive(0.2)
+    robot.servo_board.servos[0].position = 0.5
+    robot.servo_board.servos[1].position = 0.5
+
+    if ultrasoundDrive([A4], 0.15) == -1:
+        print("Ignoring ultrasound")
+        pass
+    brake()
     robot.servo_board.servos[0].position = 0.6
     robot.servo_board.servos[1].position = 0.6
-    robot.sleep(0.2)
-    while distance_to_closest_from_grabber > 0.15:
-        distance_to_closest_from_grabber = robot.arduino.pins[A4].analog_read()
-        print(f'{distance_to_closest_from_grabber}m from sensor')
-    brake()
     robot.sleep(0.25)
     
     # lift up with forklift a bit
@@ -550,7 +569,7 @@ def maincycle():
     asteroid_info = closestAsteroid()
 
     # if it didnt see an asteroid, it will turn counter-clockwise until it does and set that as its target
-    while asteroid_info == None:
+    while asteroid_info == None or asteroid_info == -1:
         print('I did not see an asteroid to target')
         # TO DO: DO SOMETHING BETTER THAN JUST RUN FUNCTION AGAIN
         asteroid_info = closestAsteroid()
