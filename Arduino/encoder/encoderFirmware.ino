@@ -103,7 +103,7 @@ void loop()
       break;
     // Custom firmware onwards
     case 'e':
-      Serial.print(distance);
+      Serial.print(encoderCount);
       Serial.write("\n");
       break;
     default:
@@ -131,5 +131,4 @@ void encoderISR()
 
   lastEncoded = encoded; // Store value for next iteration
 
-  distance = (encoderCount / (float)CPR) * PI * WHEEL_DIAMETER; // Finds distance travelled based on ratio to circumference of wheel
 }
