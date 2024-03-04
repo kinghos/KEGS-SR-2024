@@ -12,5 +12,5 @@ robot.arduino.command("e")
 
 in robot.py.
 
-##Robot code
+## Robot code
 The current robot code can be found under `robot code/Final robot code/robot.py`. This must be put into the root directory of the USB to run on start.
