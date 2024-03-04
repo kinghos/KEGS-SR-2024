@@ -12,8 +12,10 @@ encoderCount = 0
 mts[0].power = 0.25
 mts[1].power = 0.25
 while True:
-    encoderCount = int(arduino.command("v"))
-    distance = (encoderCount / CPR) * math.pi * WHEEL_DIAMETER
-    print(f"Count: {encoderCount},\t Distance: {distance}mm")
     robot.sleep(0.1)
+    strEncoderCount = arduino.command("e")
+    if strEncoderCount:
+        encoderCount = float(strEncoderCount)
+        distance = (encoderCount / CPR) * math.pi * WHEEL_DIAMETER
+        print(f"Count: {encoderCount},\t Distance: {distance}mm")
     
