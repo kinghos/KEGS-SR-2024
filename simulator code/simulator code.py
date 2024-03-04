@@ -256,7 +256,7 @@ def untilUnsee(target_id):
     tempTime = robot.time()
     while lost_sight_of_target == False:
 
-        if (robot.time() - tempTime) > 5:
+        if (robot.time() - tempTime) > 10:
             print('times up')
             return -1
         
@@ -711,10 +711,6 @@ def maincycle():
             reset()
             return
 
-    print('turning')
-    fastTurn(False)
-
-    robot.sleep(0.2)
 
 
 # game time is 150 seconds
