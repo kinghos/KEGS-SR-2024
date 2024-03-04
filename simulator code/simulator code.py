@@ -133,8 +133,7 @@ def accurateTurn(target, threshold=0.15):
 def turnSee(target, direction=False, accurate=True):
     print(f"Turning to {target}, with clockwise direction = {direction}, and accurate = {accurate}")
     robot.sleep(0.1)  # Allow for braking to have settled the robot
-    if isinstance(target,
-                  int):  # If the argument passsed is an integer, convert to a list (this conversion allows for amalgamation of previous turnSee and turnSeeList)
+    if isinstance(target, int):  # If the argument passsed is an integer, convert to a list (this conversion allows for amalgamation of previous turnSee and turnSeeList)
         target = [target, ]
 
     facing_target = False
@@ -347,8 +346,7 @@ def ultrasoundDrive(pins, distance):
         if (robot.time() - tempTime) > 3:
             print('times up')
             return -1
-        if (robot.time() - tempTime) > 0.5 and (
-                distance_to_pins - prev_distance_to_pins) < 0.01:  # distance hasn't changed from what it was 0.5 seconds ago
+        if (robot.time() - tempTime) > 0.5 and (distance_to_pins - prev_distance_to_pins) < 0.01:  # distance hasn't changed from what it was 0.5 seconds ago
             print('ultrasound distance not changing')
             return -1
         distance_to_pins = min([robot.arduino.pins[analog_pin].analog_read() for analog_pin in pins])
@@ -455,8 +453,7 @@ def baseMarkerDistanceFinder(target_marker):
             if base_marker == None:
                 continue
             base_marker_found = True
-            print(
-                f"Base marker calculated for: {base_id}. base distance: {base_marker.position.distance}, target distance: {target_marker.position.distance}")
+            print(f"Base marker calculated for: {base_id}. base distance: {base_marker.position.distance}, target distance: {target_marker.position.distance}")
             marker_target_distances.append(abs(base_marker.position.distance - target_marker.position.distance))
         return marker_target_distances
 
@@ -542,11 +539,9 @@ def eggChecker():
 
         listmarkers = robot.camera.see()
         for marker in listmarkers:
-            if marker.id == (BASE_IDS[0] - 1) % NUMBER_OF_WALL_MARKERS or marker.id == BASE_IDS[0] or marker.id == \
-                    BASE_IDS[1]:
+            if marker.id == (BASE_IDS[0] - 1) % NUMBER_OF_WALL_MARKERS or marker.id == BASE_IDS[0] or marker.id == BASE_IDS[1]:
                 seen_base_left_id = True
-            if marker.id == (BASE_IDS[0] + 1) % NUMBER_OF_WALL_MARKERS or marker.id == BASE_IDS[-1] or marker.id == \
-                    BASE_IDS[-2]:
+            if marker.id == (BASE_IDS[0] + 1) % NUMBER_OF_WALL_MARKERS or marker.id == BASE_IDS[-1] or marker.id == BASE_IDS[-2]:
                 seen_base_right_id = True
             if marker.id == EGG_ID and seen_base_right_id:
                 print(marker)
@@ -636,11 +631,9 @@ def maincycle():
         asteroid_info = closestAsteroid()
 
     firstasteroid = asteroid_info[0]
-    asteroid_direction_of_turn = not asteroid_info[
-        1]  # if we turned CW to scan the arena, we turn CCW to find the asteroid
+    asteroid_direction_of_turn = not asteroid_info[1]  # if we turned CW to scan the arena, we turn CCW to find the asteroid
 
-    print(
-        f'I have set {firstasteroid.id} as the target asteroid. To reach this asteroid I will turn clockwise = {asteroid_direction_of_turn}')
+    print(f'I have set {firstasteroid.id} as the target asteroid. To reach this asteroid I will turn clockwise = {asteroid_direction_of_turn}')
     print(f'The target asteroid has these stats: {firstasteroid}')
 
     # add current asteroid to list of blacklisted asteroids so that robot doesnt target already retrieved asteroids such as those in the spaceship
