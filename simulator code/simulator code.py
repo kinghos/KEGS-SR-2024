@@ -681,35 +681,35 @@ def maincycle():
         reset()
         return
 
-    # For each base marker seen, calculate distance between the base marker and the port marker. 
-    # If all of these distances are over 300, then the spaceship is considered out of our base
-    marker_spaceship_distances = baseMarkerDistanceFinder(spaceship_marker)
-    print(f'Distance between base marker(s) and spaceship: {marker_spaceship_distances}')
 
-    if marker_spaceship_distances == -1:
-        if planetDeposit() == -1:
-            drop()
-            reset()
-            return
+    if spaceship_marker.position.distance > 1000: # only need to check the spaceship marker distances if the spaceship is far away
+        # For each base marker seen, calculate distance between the base marker and the port marker. 
+        # If all of these distances are over 300, then the spaceship is considered out of our base
+        marker_spaceship_distances = baseMarkerDistanceFinder(spaceship_marker)
+        print(f'Distance between base marker(s) and spaceship: {marker_spaceship_distances}')
 
-    marker_spaceship_distances_under_700 = list(filter(lambda distance : distance < 700, marker_spaceship_distances))
+        if marker_spaceship_distances == -1:
+            if planetDeposit() == -1:
+                drop()
+                reset()
+                return
 
-    print("Distance between base marker(s) and spaceship under 700:", marker_spaceship_distances_under_700)
+        marker_spaceship_distances_under_700 = list(filter(lambda distance : distance < 700, marker_spaceship_distances))
+        print("Distance between base marker(s) and spaceship under 700:", marker_spaceship_distances_under_700)
 
-    # if we can't see spaceship or it is too far away from base & from ourselves, then deposit in planet
-    if seeSpaceship == -1 or (len(marker_spaceship_distances_under_700) == 0 and spaceship_marker.position.distance > 1000): # If can't find spaceship or it is too far from second base marker
-    #if seeSpaceship == -1 or spaceship_marker.position.distance > 1000:  # If can't find spaceship or if it is too far from robot
-        print(f'spaceship distance {spaceship_marker.position.distance}')
-        if planetDeposit() == -1:
-            drop()
-            reset()
-            return
-    else:
-        print('depositing in spaceship')
-        if spaceshipDeposit(spaceship_marker.id) == -1:
-            drop()
-            reset()
-            return
+        # if spaceship is too far away from base, then deposit in planet
+        if len(marker_spaceship_distances_under_700) == 0: # If can't find spaceship or it is too far from second base marker
+            print(f'spaceship distance {spaceship_marker.position.distance}')
+            if planetDeposit() == -1:
+                drop()
+                reset()
+                return 
+
+    print('depositing in spaceship')
+    if spaceshipDeposit(spaceship_marker.id) == -1:
+        drop()
+        reset()
+        return
 
 
 
