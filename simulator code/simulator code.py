@@ -30,16 +30,19 @@ def mediumDrive():
     robot.motor_board.motors[0].power = 0.4
     robot.motor_board.motors[1].power = 0.4
 
+
 def speedDrive(speed):
     robot.motor_board.motors[0].power = speed
     robot.motor_board.motors[1].power = speed
 
+
 def rampDrive(ramp_speed_start, speed=1):
-    power = (robot.time() - ramp_speed_start) * 2 # Ramp speed up
+    power = (robot.time() - ramp_speed_start) * 2  # Ramp speed up
     if power >= speed:
         speedDrive(speed)
     else:
         speedDrive(power)
+
 
 # drive backwards at x speed
 def backwardsDrive(speed):
@@ -56,6 +59,7 @@ def slowTurn(clockwise: bool):
         robot.motor_board.motors[0].power = -0.01
         robot.motor_board.motors[1].power = 0.01
 
+
 def mediumTurn(clockwise: bool):
     if clockwise == True:
         robot.motor_board.motors[0].power = 0.15
@@ -63,6 +67,7 @@ def mediumTurn(clockwise: bool):
     else:
         robot.motor_board.motors[0].power = -0.15
         robot.motor_board.motors[1].power = 0.15
+
 
 # fast turning, clockwise is true, counter clockwise is false
 def fastTurn(clockwise: bool):
@@ -87,11 +92,11 @@ def look(targetid):
 
 # Returns True if facing target, False if not
 # Default value of 0.15 for threshold, in which case it uses mediumTurn
-def accurateTurn(target, threshold = 0.15):
+def accurateTurn(target, threshold=0.15):
     if threshold > 0.1:
         med_threshold = threshold
     else:
-        med_threshold = 2*threshold
+        med_threshold = 2 * threshold
 
     if target.position.horizontal_angle < -0.5:
         fastTurn(False)
@@ -123,10 +128,13 @@ def accurateTurn(target, threshold = 0.15):
     ⇒ returns -1 for 'times up'
     ⇒ returns marker info for success
 """
+
+
 def turnSee(target, direction=False, accurate=True):
     print(f"Turning to {target}, with clockwise direction = {direction}, and accurate = {accurate}")
-    robot.sleep(0.1) # Allow for braking to have settled the robot
-    if isinstance(target, int):  # If the argument passsed is an integer, convert to a list (this conversion allows for amalgamation of previous turnSee and turnSeeList)
+    robot.sleep(0.1)  # Allow for braking to have settled the robot
+    if isinstance(target,
+                  int):  # If the argument passsed is an integer, convert to a list (this conversion allows for amalgamation of previous turnSee and turnSeeList)
         target = [target, ]
 
     facing_target = False
@@ -153,7 +161,8 @@ def turnSee(target, direction=False, accurate=True):
             if look(MID_BASE_ID) != None:
                 seen_base = True
                 print("seen base")
-            elif look(((robot.zone + 2) % 4) * 7 + 3) != None or look(((robot.zone + 2) % 4) * 7 + 1) != None or look(((robot.zone + 2) % 4) * 7 + 5) != None:
+            elif look(((robot.zone + 2) % 4) * 7 + 3) != None or look(((robot.zone + 2) % 4) * 7 + 1) != None or look(
+                    ((robot.zone + 2) % 4) * 7 + 5) != None:
                 seen_opposite = True
                 print("seen opposite")
             if seen_base and seen_opposite:
@@ -196,6 +205,8 @@ def isAsteroidRetrievable(marker):
    ⇒ returns None if it can't find anything
    ⇒ returns -1 if times up
 """
+
+
 def closestAsteroid():
     print("closestAsteroid()")
     seen_opposite_left_id = False  # If starting at zone 0, ids in question are 13 and 14
@@ -206,11 +217,11 @@ def closestAsteroid():
     tempTime = robot.time()
 
     while not ((seen_opposite_left_id and seen_opposite_right_id) or seen_base_middle_id):
-        
+
         if (robot.time() - tempTime) > 5:
             print('closesAsteroid() times up')
             return -1
-        
+
         if seen_opposite_left_id and not seen_opposite_right_id:
             clockwise_turn = True
         elif seen_opposite_right_id and not seen_opposite_left_id:
@@ -259,7 +270,7 @@ def untilUnsee(target_id):
         if (robot.time() - tempTime) > 10:
             print('times up')
             return -1
-        
+
         # set target asteroid information to temp variable, in case it cannot see it later
         moment = look(target_id)
         # if it doesnt see the target asteroid then stop and exit loop
@@ -268,14 +279,14 @@ def untilUnsee(target_id):
             brake()
             lost_sight_of_target = True
             return
-        elif accurateTurn(moment, 0.12): # Course correction
+        elif accurateTurn(moment, 0.12):  # Course correction
             if ramp_speed_start == None:
                 ramp_speed_start = robot.time()
             if moment.position.distance > 500:
                 rampDrive(ramp_speed_start, 1)
             else:
                 rampDrive(ramp_speed_start, 0.4)
-        else: # If had to turn, then reset ramping
+        else:  # If had to turn, then reset ramping
             ramp_speed_start = None
     return
 
@@ -310,10 +321,10 @@ def correctDrive(targetid, distance):
         elif target.position.distance < distance:
             brake()
             arrived_at_target = True
-        elif accurateTurn(target): # Course correction
+        elif accurateTurn(target):  # Course correction
             if ramp_speed_start == None:
                 ramp_speed_start = robot.time()
-            if target.position.distance > 1.5*distance:
+            if target.position.distance > 1.5 * distance:
                 rampDrive(ramp_speed_start, 1)
             else:
                 rampDrive(ramp_speed_start, 0.4)
@@ -336,16 +347,18 @@ def ultrasoundDrive(pins, distance):
         if (robot.time() - tempTime) > 3:
             print('times up')
             return -1
-        if (robot.time() - tempTime) > 0.5 and (distance_to_pins - prev_distance_to_pins) < 0.01: # distance hasn't changed from what it was 0.5 seconds ago
+        if (robot.time() - tempTime) > 0.5 and (
+                distance_to_pins - prev_distance_to_pins) < 0.01:  # distance hasn't changed from what it was 0.5 seconds ago
             print('ultrasound distance not changing')
             return -1
         distance_to_pins = min([robot.arduino.pins[analog_pin].analog_read() for analog_pin in pins])
         print(f"{distance_to_pins}m away from {pins}")
         robot.sleep(0.1)
-        if distance_to_pins == 0.5: # Ultrasound doesn't see anything
+        if distance_to_pins == 0.5:  # Ultrasound doesn't see anything
             print("0.5m away!")
             return -1
     return
+
 
 # ⇒ Returns -1 if correctdrive fails
 def spaceshipDeposit(spaceship_id):
@@ -359,20 +372,23 @@ def spaceshipDeposit(spaceship_id):
     # deposit into ship sequence
     print('raising')
     robot.servo_board.servos[2].position = 1
+    brake()
+    robot.sleep(0.2)
+
 
     speedDrive(0.2)
 
-    if ultrasoundDrive([A0, A1], 0.6) == -1: # drive to 0.6m away from spaceship using bottom sensors
+    if ultrasoundDrive([A0, A1], 0.6) == -1:  # drive to 0.6m away from spaceship using bottom sensors
         print("ultrasound failed")
         drop()
         reset()
         return
-    
+
     brake()
     robot.sleep(0.8)
     speedDrive(0.15)
 
-    if ultrasoundDrive([A0, A1], 0.15) == -1: # drive to 0.45m away from spaceship using bottom sensors
+    if ultrasoundDrive([A0, A1], 0.15) == -1:  # drive to 0.45m away from spaceship using bottom sensors
         print("ultrasound failed")
         drop()
         reset()
@@ -418,7 +434,7 @@ def planetDeposit():
             brake()
             drop()
             return
-        
+
     return -1
 
 
@@ -439,7 +455,8 @@ def baseMarkerDistanceFinder(target_marker):
             if base_marker == None:
                 continue
             base_marker_found = True
-            print(f"Base marker calculated for: {base_id}. base distance: {base_marker.position.distance}, target distance: {target_marker.position.distance}")
+            print(
+                f"Base marker calculated for: {base_id}. base distance: {base_marker.position.distance}, target distance: {target_marker.position.distance}")
             marker_target_distances.append(abs(base_marker.position.distance - target_marker.position.distance))
         return marker_target_distances
 
@@ -508,6 +525,8 @@ def eggMover(direction_of_turn):
   Returns whether egg is arena and the direction the robot is currently turning to scan the base
    => return (is_egg_in_base, clockwise_turn)
 """
+
+
 def eggChecker():
     print("eggChecker()")
     seen_base_left_id = False  # If starting at zone 0, ids in question are 27, 0, 1 (consider 3 for extra contingency)
@@ -523,15 +542,17 @@ def eggChecker():
 
         listmarkers = robot.camera.see()
         for marker in listmarkers:
-            if marker.id == (BASE_IDS[0] - 1) % NUMBER_OF_WALL_MARKERS or marker.id == BASE_IDS[0] or marker.id == BASE_IDS[1]:
+            if marker.id == (BASE_IDS[0] - 1) % NUMBER_OF_WALL_MARKERS or marker.id == BASE_IDS[0] or marker.id == \
+                    BASE_IDS[1]:
                 seen_base_left_id = True
-            if marker.id == (BASE_IDS[0] + 1) % NUMBER_OF_WALL_MARKERS or marker.id == BASE_IDS[-1] or marker.id == BASE_IDS[-2]:
+            if marker.id == (BASE_IDS[0] + 1) % NUMBER_OF_WALL_MARKERS or marker.id == BASE_IDS[-1] or marker.id == \
+                    BASE_IDS[-2]:
                 seen_base_right_id = True
             if marker.id == EGG_ID and seen_base_right_id:
                 print(marker)
                 # Check if the egg is near our base using difference in distances between each base marker and the egg marker
                 print(baseMarkerDistanceFinder(marker))
-                
+
                 if len(list(filter(lambda distance: distance < 300, baseMarkerDistanceFinder(marker)))) > 0:
                     print("EGG IN BASE!!!")
                     is_egg_in_base = True
@@ -548,13 +569,13 @@ def reset():
 def grab():
     print("grab()")
     # Lowering forklift and grabbing halfway at the same time for efficiency
-    robot.servo_board.servos[2].position = -1 #lower
-    robot.servo_board.servos[0].position = 0.3 # prepare for grabbing
-    robot.servo_board.servos[1].position = 0.3 # prepare for grabbing
+    robot.servo_board.servos[2].position = -1  # lower
+    robot.servo_board.servos[0].position = 0.3  # prepare for grabbing
+    robot.servo_board.servos[1].position = 0.3  # prepare for grabbing
     robot.sleep(0.1)
     robot.servo_board.servos[0].position = 0
     robot.servo_board.servos[1].position = 0
-    robot.servo_board.servos[2].position = -1 #lower
+    robot.servo_board.servos[2].position = -1  # lower
     robot.sleep(0.8)
 
     # grab box
@@ -573,7 +594,7 @@ def grab():
     robot.servo_board.servos[0].position = 0.6
     robot.servo_board.servos[1].position = 0.6
     robot.sleep(0.25)
-    
+
     # lift up with forklift a bit
     robot.servo_board.servos[2].position = -0.8
     robot.sleep(0.3)
@@ -583,8 +604,10 @@ def drop():
     print('drop()')
     robot.servo_board.servos[0].position = -1
     robot.servo_board.servos[1].position = -1
-    global collected
-    collected += 1
+
+    # dropping doesnt increment the collected counter, spaceshipDeposit does
+    # global collected
+    # collected += 1
 
     robot.sleep(1)
     backwardsDrive(0.5)
@@ -594,6 +617,9 @@ def drop():
 
 
 # choose asteroid, go to asteroid, go to base, go to spaceship, put asteroid in spaceship, repeat
+firstTwo = False
+
+
 def maincycle():
     # lift up the forklift a bit to ensure no collision with raised platform/other boxes
     # lowered this a bit because box pickup interferred a bit with vision
@@ -610,12 +636,14 @@ def maincycle():
         asteroid_info = closestAsteroid()
 
     firstasteroid = asteroid_info[0]
-    asteroid_direction_of_turn = not asteroid_info[1]  # if we turned CW to scan the arena, we turn CCW to find the asteroid
+    asteroid_direction_of_turn = not asteroid_info[
+        1]  # if we turned CW to scan the arena, we turn CCW to find the asteroid
 
-    print(f'I have set {firstasteroid.id} as the target asteroid. To reach this asteroid I will turn clockwise = {asteroid_direction_of_turn}')
+    print(
+        f'I have set {firstasteroid.id} as the target asteroid. To reach this asteroid I will turn clockwise = {asteroid_direction_of_turn}')
     print(f'The target asteroid has these stats: {firstasteroid}')
 
-    #add current asteroid to list of blacklisted asteroids so that robot doesnt target already retrieved asteroids such as those in the spaceship
+    # add current asteroid to list of blacklisted asteroids so that robot doesnt target already retrieved asteroids such as those in the spaceship
     blackList.append(firstasteroid.id)
 
     # turn until it is in line with the target asteroid
@@ -632,8 +660,24 @@ def maincycle():
         brake()
         reset()
 
-    grab()
-    
+    global firstTwo
+    if collected == 0 and not firstTwo:
+        brake()
+        robot.servo_board.servos[2].position = -1
+        robot.sleep(0.5)
+        speedDrive(0.4)
+        robot.sleep(1.8)
+        brake()
+        robot.servo_board.servos[0].position = 1
+        robot.servo_board.servos[1].position = 1
+        robot.sleep(1)
+        backwardsDrive(0.5)
+        robot.sleep(0.3)
+        brake()
+
+    else:
+        grab()
+
     egg_info = eggChecker()
     is_egg_in_base = egg_info[0]
     egg_direction_of_turn = not egg_info[1]
@@ -643,37 +687,48 @@ def maincycle():
 
     brake()
     seeLeftBase = turnSee(BASE_IDS[2], egg_direction_of_turn)
-    if seeLeftBase == -1: # If it can't see base marker 2
-        see_first_base = turnSee(BASE_IDS) # Then find the first base marker it does see
-        if see_first_base != -1: # If it has been found, drive to it
-            if correctDrive(see_first_base.id, 500) == -1: # If driving fails, reset
+    if seeLeftBase == -1:  # If it can't see base marker 2
+        see_first_base = turnSee(BASE_IDS)  # Then find the first base marker it does see
+        if see_first_base != -1:  # If it has been found, drive to it
+            if correctDrive(see_first_base.id, 500) == -1:  # If driving fails, reset
                 drop()
                 reset()
                 return
-        else: # If no base markers are visible
+        else:  # If no base markers are visible
             drop()
             reset()
             return
-    else: # If base marker 2 found, drive to it
+    else:  # If base marker 2 found, drive to it
         brake()
         print(f'going to {BASE_IDS[2]} (base)')
-        if correctDrive(BASE_IDS[2], 500) == -1: # If driving fails, reset
+        if correctDrive(BASE_IDS[2], 500) == -1:  # If driving fails, reset
             drop()
             reset()
             return
 
-
     robot.sleep(0.2)
+
+    if collected == 0 and not firstTwo:
+        firstTwo = True
+        if planetDeposit() == -1:
+            reset()
+            return
+        print('turning')
+        fastTurn(False)
+
+        robot.sleep(0.2)
+        reset()
+        return
 
     seeSpaceship = None
     if collected < 6:
         # number of collected asteroids is less than 6
         # go to spaceship
         seeSpaceship = turnSee([PORT_ID, STARBOARD_ID], False, False)
-        if seeSpaceship != -1: # If spaceship has been found
+        if seeSpaceship != -1:  # If spaceship has been found
             spaceship_marker = look(seeSpaceship.id)
-    
-    if collected >= 6 or seeSpaceship == -1: # If spaceship not found
+
+    if collected >= 6 or seeSpaceship == -1:  # If spaceship not found
         if planetDeposit() == -1:
             drop()
             reset()
@@ -681,9 +736,8 @@ def maincycle():
         reset()
         return
 
-
-    if spaceship_marker.position.distance > 1000: # only need to check the spaceship marker distances if the spaceship is far away
-        # For each base marker seen, calculate distance between the base marker and the port marker. 
+    if spaceship_marker.position.distance > 1000:  # only need to check the spaceship marker distances if the spaceship is far away
+        # For each base marker seen, calculate distance between the base marker and the port marker.
         # If all of these distances are over 300, then the spaceship is considered out of our base
         marker_spaceship_distances = baseMarkerDistanceFinder(spaceship_marker)
         print(f'Distance between base marker(s) and spaceship: {marker_spaceship_distances}')
@@ -694,23 +748,22 @@ def maincycle():
                 reset()
                 return
 
-        marker_spaceship_distances_under_700 = list(filter(lambda distance : distance < 700, marker_spaceship_distances))
+        marker_spaceship_distances_under_700 = list(filter(lambda distance: distance < 700, marker_spaceship_distances))
         print("Distance between base marker(s) and spaceship under 700:", marker_spaceship_distances_under_700)
 
         # if spaceship is too far away from base, then deposit in planet
-        if len(marker_spaceship_distances_under_700) == 0: # If can't find spaceship or it is too far from second base marker
+        if len(marker_spaceship_distances_under_700) == 0:  # If can't find spaceship or it is too far from second base marker
             print(f'spaceship distance {spaceship_marker.position.distance}')
             if planetDeposit() == -1:
                 drop()
                 reset()
-                return 
+                return
 
     print('depositing in spaceship')
     if spaceshipDeposit(spaceship_marker.id) == -1:
         drop()
         reset()
         return
-
 
 
 # game time is 150 seconds
