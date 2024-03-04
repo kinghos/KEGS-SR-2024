@@ -330,21 +330,21 @@ def ultrasoundDrive(pins, distance):
         robot.arduino.pins[pin].mode = INPUT
     distance_to_pins = min([robot.arduino.pins[analog_pin].analog_read() for analog_pin in pins])
     tempTime = robot.time()
+    prev_distance_to_pins = distance_to_pins
     prev_distance_to_pins = 0
     while distance_to_pins > distance:
         if (robot.time() - tempTime) > 3:
             print('times up')
             return -1
-        if (robot.time() - tempTime) > 1 and (distance_to_pins - prev_distance_to_pins) < 0.01:
+        if (robot.time() - tempTime) > 0.5 and (distance_to_pins - prev_distance_to_pins) < 0.01: # distance hasn't changed from what it was 0.5 seconds ago
             print('ultrasound distance not changing')
             return -1
         distance_to_pins = min([robot.arduino.pins[analog_pin].analog_read() for analog_pin in pins])
         print(f"{distance_to_pins}m away from {pins}")
         robot.sleep(0.1)
-        if distance_to_pins == 0.5:
+        if distance_to_pins == 0.5: # Ultrasound doesn't see anything
             print("0.5m away!")
             return -1
-        prev_distance_to_pins = distance_to_pins
     return
 
 # ⇒ Returns -1 if correctdrive fails
@@ -563,9 +563,13 @@ def grab():
     robot.servo_board.servos[1].position = 0.5
 
     if ultrasoundDrive([A4], 0.15) == -1:
-        print("Ignoring ultrasound")
-        pass
+        print("Ultrasound driving has failed (we probably don't have an asteroid in the claw)")
+        drop()
+        reset()
+        return
     brake()
+    backwardsDrive(0.1)
+    robot.sleep(0.25)
     robot.servo_board.servos[0].position = 0.6
     robot.servo_board.servos[1].position = 0.6
     robot.sleep(0.25)
@@ -638,7 +642,6 @@ def maincycle():
         eggMover(egg_direction_of_turn)
 
     brake()
-    print(f"TURNING clockwise = {egg_direction_of_turn}")
     seeLeftBase = turnSee(BASE_IDS[2], egg_direction_of_turn)
     if seeLeftBase == -1: # If it can't see base marker 2
         see_first_base = turnSee(BASE_IDS) # Then find the first base marker it does see
