@@ -6,12 +6,8 @@
 
 #define ENCODER_PIN_A 2
 #define ENCODER_PIN_B 3
-// Magic starts here---------
-#define CPR 2 * PI / (4 * 11)     // Note: idk why this works, but it does, so don't change and don't ammend in an attempt for more precision
-// Magic ends here-----------
 #define WHEEL_DIAMETER 80 // mm
 volatile long encoderCount = 0;
-float distance = 0;
 int lastEncoded = 0;
 
 void setup()
