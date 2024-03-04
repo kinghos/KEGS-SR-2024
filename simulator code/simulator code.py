@@ -124,12 +124,15 @@ def accurateTurn(target, threshold = 0.15):
     ⇒ returns marker info for success
 """
 def turnSee(target, direction=False, accurate=True):
-    robot.sleep(0.05) # Allow for braking to have settled the robot
+    robot.sleep(0.1) # Allow for braking to have settled the robot
     if isinstance(target, int):  # If the argument passsed is an integer, convert to a list (this conversion allows for amalgamation of previous turnSee and turnSeeList)
         target = [target, ]
 
     facing_target = False
     tempTime = robot.time()
+    seen_base = False
+    seen_opposite = False
+    revs = 0
     while facing_target == False:
         # if >5 sec elapsed then reset
         if (robot.time() - tempTime) > 5:
@@ -146,6 +149,20 @@ def turnSee(target, direction=False, accurate=True):
         if looktarget == None:
             fastTurn(direction)
             print(f'turnSee could not find {target}')
+            if look(MID_BASE_ID) != None:
+                seen_base = True
+                print("seen base")
+            elif look(((robot.zone + 2) % 4) * 7 + 3) != None or look(((robot.zone + 2) % 4) * 7 + 1) != None or look(((robot.zone + 2) % 4) * 7 + 5) != None:
+                seen_opposite = True
+                print("seen opposite")
+            if seen_base and seen_opposite:
+                seen_base = False
+                seen_opposite = False
+                revs += 1
+                print(f"seen both, revs: {revs}")
+            if revs > 1:
+                print("Made a full revolution w/o seeing target")
+                return -1
             continue
 
         # Accurately turn to target. If facing, stop turning & end loop
@@ -249,7 +266,7 @@ def untilUnsee(target_id):
             brake()
             lost_sight_of_target = True
             return
-        elif accurateTurn(moment, 0.1): # Course correction
+        elif accurateTurn(moment, 0.12): # Course correction
             if ramp_speed_start == None:
                 ramp_speed_start = robot.time()
             if moment.position.distance > 500:
@@ -664,12 +681,12 @@ def maincycle():
             reset()
             return
 
-    marker_spaceship_distances_under_300 = list(filter(lambda distance : distance < 300, marker_spaceship_distances))
+    marker_spaceship_distances_under_700 = list(filter(lambda distance : distance < 700, marker_spaceship_distances))
 
-    print("Distance between base marker(s) and spaceship under 300:", marker_spaceship_distances_under_300)
+    print("Distance between base marker(s) and spaceship under 700:", marker_spaceship_distances_under_700)
 
     # if we can't see spaceship or it is too far away from base & from ourselves, then deposit in planet
-    if seeSpaceship == -1 or (len(marker_spaceship_distances_under_300) == 0 and spaceship_marker.position.distance > 1000): # If can't find spaceship or it is too far from second base marker
+    if seeSpaceship == -1 or (len(marker_spaceship_distances_under_700) == 0 and spaceship_marker.position.distance > 1000): # If can't find spaceship or it is too far from second base marker
     #if seeSpaceship == -1 or spaceship_marker.position.distance > 1000:  # If can't find spaceship or if it is too far from robot
         print(f'spaceship distance {spaceship_marker.position.distance}')
         if planetDeposit() == -1:
