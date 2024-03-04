@@ -124,6 +124,7 @@ def accurateTurn(target, threshold = 0.15):
     ⇒ returns marker info for success
 """
 def turnSee(target, direction=False, accurate=True):
+    print(f"Turning to {target}, with clockwise direction = {direction}, and accurate = {accurate}")
     robot.sleep(0.1) # Allow for braking to have settled the robot
     if isinstance(target, int):  # If the argument passsed is an integer, convert to a list (this conversion allows for amalgamation of previous turnSee and turnSeeList)
         target = [target, ]
@@ -132,11 +133,11 @@ def turnSee(target, direction=False, accurate=True):
     tempTime = robot.time()
     seen_base = False
     seen_opposite = False
-    revs = 0
+    made_a_rev = False
     while facing_target == False:
         # if >5 sec elapsed then reset
         if (robot.time() - tempTime) > 5:
-            print('times up')
+            print('turnSee() times up')
             return -1
         # if it doesnt see the target than it will turn counter-clockwise until it does
         global looktarget
@@ -158,10 +159,10 @@ def turnSee(target, direction=False, accurate=True):
             if seen_base and seen_opposite:
                 seen_base = False
                 seen_opposite = False
-                revs += 1
-                print(f"seen both, revs: {revs}")
-            if revs > 1:
+                made_a_rev = True
                 print("Made a full revolution w/o seeing target")
+            if made_a_rev and seen_opposite:
+                print("Fail (revolution made w/o target)")
                 return -1
             continue
 
@@ -175,11 +176,10 @@ def turnSee(target, direction=False, accurate=True):
         if accurateTurn(looktarget, threshold):
             brake()
             facing_target = True
-    print(f'facing target ({target}) \t horiz angle: {looktarget.position.horizontal_angle}')
+    print(f'turnSee() facing target ({target}) \t horiz angle: {looktarget.position.horizontal_angle}')
     return looktarget
 
 
-# TO DO - TEST & FIX
 # ⇒ True/False return
 def isAsteroidRetrievable(marker):
     marker_camera_vertical_distance = marker.position.distance * math.sin(marker.position.vertical_angle)
@@ -197,6 +197,7 @@ def isAsteroidRetrievable(marker):
    ⇒ returns -1 if times up
 """
 def closestAsteroid():
+    print("closestAsteroid()")
     seen_opposite_left_id = False  # If starting at zone 0, ids in question are 13 and 14
     seen_opposite_right_id = False  # If starting at zone 0, id in question are 20 and 21 (consider 2 for contingency)
     seen_base_middle_id = False  # Added contingency
@@ -207,7 +208,7 @@ def closestAsteroid():
     while not ((seen_opposite_left_id and seen_opposite_right_id) or seen_base_middle_id):
         
         if (robot.time() - tempTime) > 5:
-            print('times up')
+            print('closesAsteroid() times up')
             return -1
         
         if seen_opposite_left_id and not seen_opposite_right_id:
@@ -232,10 +233,11 @@ def closestAsteroid():
             if marker.id in ASTEROID_IDS and isAsteroidRetrievable(marker):
                 asteroids.append(marker)
 
-    brake()
     if len(asteroids) == 0:
-        print("closestAsteroid couldnt find anything")
+        print("closestAsteroid() couldnt find anything")
         return None
+
+    brake()
 
     closest = None
     for marker in asteroids:
@@ -248,7 +250,7 @@ def closestAsteroid():
 
 # ⇒ returns -1 for times up
 def untilUnsee(target_id):
-    print('untilunsee')
+    print(f'untilUnsee({target_id})')
     lost_sight_of_target = False
     ramp_speed_start = None
     tempTime = robot.time()
@@ -282,6 +284,7 @@ def untilUnsee(target_id):
 # Brakes and returns None when completed
 # Resets if times up
 def correctDrive(targetid, distance):
+    print(f"correctDrive({targetid}, {distance})")
     arrived_at_target = False
     tempTime = robot.time()
     ramp_speed_start = None
@@ -322,6 +325,7 @@ def correctDrive(targetid, distance):
 # receives list of pins and target distance
 # returns -1 if 5m away
 def ultrasoundDrive(pins, distance):
+    print(f"ultrasoundDrive({distance})")
     for pin in pins:
         robot.arduino.pins[pin].mode = INPUT
     distance_to_pins = min([robot.arduino.pins[analog_pin].analog_read() for analog_pin in pins])
@@ -332,7 +336,7 @@ def ultrasoundDrive(pins, distance):
             print('times up')
             return -1
         if (robot.time() - tempTime) > 1 and (distance_to_pins - prev_distance_to_pins) < 0.01:
-            print('distance not changing')
+            print('ultrasound distance not changing')
             return -1
         distance_to_pins = min([robot.arduino.pins[analog_pin].analog_read() for analog_pin in pins])
         print(f"{distance_to_pins}m away from {pins}")
@@ -345,7 +349,7 @@ def ultrasoundDrive(pins, distance):
 
 # ⇒ Returns -1 if correctdrive fails
 def spaceshipDeposit(spaceship_id):
-    print('going to spaceship')
+    print('spaceshipDeposit()')
 
     turnSee(spaceship_id, True, True)
     if correctDrive(spaceship_id, 600) == -1:
@@ -406,7 +410,7 @@ def spaceshipDeposit(spaceship_id):
 
 # ⇒ Returns -1 for failure (can't find the base markers)
 def planetDeposit():
-    print("going to planet for deposition")
+    print("planetDeposit()")
 
     for i in range(3, 7):
         if turnSee(BASE_IDS[i], True) != -1:
@@ -421,6 +425,7 @@ def planetDeposit():
 # Finds distances between the base markers and a target marker
 # ⇒ returns -1 for times up
 def baseMarkerDistanceFinder(target_marker):
+    print(f"baseMarkerDistanceFinder({target_marker.id}) Calculating distances")
     marker_target_distances = []
     base_marker_found = False
     tempTime = robot.time()
@@ -442,7 +447,7 @@ def baseMarkerDistanceFinder(target_marker):
 # Moves egg to the nearest enemy base
 # ⇒ No return value
 def eggMover(direction_of_turn):
-    print("Moving egg out of base")
+    print("eggMover(): Moving egg out of base")
     # get previous asteroid carried out of the way
     brake()
     drop()
@@ -504,6 +509,7 @@ def eggMover(direction_of_turn):
    => return (is_egg_in_base, clockwise_turn)
 """
 def eggChecker():
+    print("eggChecker()")
     seen_base_left_id = False  # If starting at zone 0, ids in question are 27, 0, 1 (consider 3 for extra contingency)
     seen_base_right_id = False  # If starting at zone 0, id in question are 5, 6, 7 (consider 3 for extra contingency)
     is_egg_in_base = False
@@ -534,11 +540,13 @@ def eggChecker():
 
 
 def reset():
+    print("RESET!!!")
     maincycle()
     return
 
 
 def grab():
+    print("grab()")
     # Lowering forklift and grabbing halfway at the same time for efficiency
     robot.servo_board.servos[2].position = -1 #lower
     robot.servo_board.servos[0].position = 0.3 # prepare for grabbing
@@ -568,7 +576,7 @@ def grab():
 
 
 def drop():
-    print('release')
+    print('drop()')
     robot.servo_board.servos[0].position = -1
     robot.servo_board.servos[1].position = -1
     global collected
@@ -595,7 +603,6 @@ def maincycle():
     # if it didnt see an asteroid, it will turn counter-clockwise until it does and set that as its target
     while asteroid_info == None or asteroid_info == -1:
         print('I did not see an asteroid to target')
-        # TO DO: DO SOMETHING BETTER THAN JUST RUN FUNCTION AGAIN
         asteroid_info = closestAsteroid()
 
     firstasteroid = asteroid_info[0]
@@ -655,18 +662,19 @@ def maincycle():
 
     robot.sleep(0.2)
 
-    # go to spaceship
-    seeSpaceship = turnSee([PORT_ID, STARBOARD_ID], False, False)
-    if seeSpaceship != -1: # If spaceship has been found
-        spaceship_marker = look(seeSpaceship.id)
-    else: # If spaceship not found
+    seeSpaceship = None
+    if collected < 6:
+        # number of collected asteroids is less than 6
+        # go to spaceship
+        seeSpaceship = turnSee([PORT_ID, STARBOARD_ID], False, False)
+        if seeSpaceship != -1: # If spaceship has been found
+            spaceship_marker = look(seeSpaceship.id)
+    
+    if collected >= 6 or seeSpaceship == -1: # If spaceship not found
         if planetDeposit() == -1:
+            drop()
             reset()
             return
-        print('turning')
-        fastTurn(False)
-
-        robot.sleep(0.2)
         reset()
         return
 
