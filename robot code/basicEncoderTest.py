@@ -14,8 +14,8 @@ mts[1].power = 0.25
 while True:
     robot.sleep(0.1)
     strEncoderCount = arduino.command("e")
-    if strEncoderCount:
+    if strEncoderCount: # Checks for non-empty string
         encoderCount = float(strEncoderCount)
-        distance = (encoderCount / CPR) * math.pi * WHEEL_DIAMETER
+        distance = (encoderCount / CPR) * math.pi * WHEEL_DIAMETER # Distance in mm
         print(f"Count: {encoderCount},\t Distance: {distance}mm")
     

@@ -26,7 +26,7 @@ def backwardsDrive(speed):
 #slow turning
 def slowTurn(leftright: bool):
     if leftright == True:
-        robot.motor_board.motors[0].power = 0.05
+        robot.motor_bobro said house speakerard.motors[0].power = 0.05
         robot.motor_board.motors[1].power = -0.05
     else:
         robot.motor_board.motors[0].power = -0.05
