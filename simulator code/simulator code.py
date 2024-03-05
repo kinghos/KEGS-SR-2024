@@ -53,11 +53,11 @@ def backwardsDrive(speed):
 # slow turning, clockwise is true, counter clockwise is false
 def slowTurn(clockwise: bool):
     if clockwise == True:
-        robot.motor_board.motors[0].power = 0.01
-        robot.motor_board.motors[1].power = -0.01
+        robot.motor_board.motors[0].power = 0.007
+        robot.motor_board.motors[1].power = -0.007
     else:
-        robot.motor_board.motors[0].power = -0.01
-        robot.motor_board.motors[1].power = 0.01
+        robot.motor_board.motors[0].power = -0.007
+        robot.motor_board.motors[1].power = 0.007
 
 
 def mediumTurn(clockwise: bool):
@@ -133,15 +133,16 @@ def accurateTurn(target, threshold=0.15):
 def turnSee(target, direction=False, accurate=True):
     print(f"Turning to {target}, with clockwise direction = {direction}, and accurate = {accurate}")
     robot.sleep(0.1)  # Allow for braking to have settled the robot
-    if isinstance(target, int):  # If the argument passsed is an integer, convert to a list (this conversion allows for amalgamation of previous turnSee and turnSeeList)
+    if isinstance(target, int):  # If the argument passsed is an integer, convert to a list
         target = [target, ]
 
     facing_target = False
+    aligned = False
     tempTime = robot.time()
     seen_base = False
     seen_opposite = False
     made_a_rev = False
-    while facing_target == False:
+    while aligned == False:
         # if >5 sec elapsed then reset
         if (robot.time() - tempTime) > 5:
             print('turnSee() times up')
@@ -160,8 +161,7 @@ def turnSee(target, direction=False, accurate=True):
             if look(MID_BASE_ID) != None:
                 seen_base = True
                 print("seen base")
-            elif look(((robot.zone + 2) % 4) * 7 + 3) != None or look(((robot.zone + 2) % 4) * 7 + 1) != None or look(
-                    ((robot.zone + 2) % 4) * 7 + 5) != None:
+            elif any([look(((robot.zone + 2) % 4) * 7 + i) for i in range(1,6)]): # If seen any opposite arena marker
                 seen_opposite = True
                 print("seen opposite")
             if seen_base and seen_opposite:
@@ -183,7 +183,12 @@ def turnSee(target, direction=False, accurate=True):
         print(f"turning to {threshold} accuracy", end='\t')
         if accurateTurn(looktarget, threshold):
             brake()
+            if facing_target: # If it has been facing target for two iterations in a row
+                aligned = True
+            else:
+                aligned = False
             facing_target = True
+            robot.sleep(0.3) # Give time for robot braking to settle
     print(f'turnSee() facing target ({target}) \t horiz angle: {looktarget.position.horizontal_angle}')
     return looktarget
 
@@ -293,11 +298,17 @@ def untilUnsee(target_id):
 # Returns -1 for a fail caused by targetid disappearing
 # Brakes and returns None when completed
 # Resets if times up
-def correctDrive(targetid, distance):
+def correctDrive(targetid, distance, accurate=True):
     print(f"correctDrive({targetid}, {distance})")
     arrived_at_target = False
     tempTime = robot.time()
     ramp_speed_start = None
+
+    if accurate:
+        threshold = 0.15
+    else:
+        threshold = 0.3
+
     while arrived_at_target == False:
         if (robot.time() - tempTime) > 10:
             print('times up')
@@ -313,14 +324,14 @@ def correctDrive(targetid, distance):
         if target == None:
             print('correctDrive can\'t find target marker')
             brake()
-            if turnSee(targetid) == -1:
+            if turnSee(targetid, False, False) == -1:
                 print(f"{targetid} disappeared?")
                 return -1
         # stop if it gets close to the target
         elif target.position.distance < distance:
             brake()
             arrived_at_target = True
-        elif accurateTurn(target):  # Course correction
+        elif accurateTurn(target, threshold):  # Course correction
             if ramp_speed_start == None:
                 ramp_speed_start = robot.time()
             if target.position.distance > 1.5 * distance:
@@ -426,9 +437,9 @@ def spaceshipDeposit(spaceship_id):
 def planetDeposit():
     print("planetDeposit()")
 
-    for i in range(3, 7):
+    for i in range(3, 6): # don't want to put close to spaceship nor near the planet zone boundaries
         if turnSee(BASE_IDS[i], True) != -1:
-            correctDrive(BASE_IDS[i], 500)
+            correctDrive(BASE_IDS[i], 500, False)
             brake()
             drop()
             return
@@ -447,10 +458,12 @@ def baseMarkerDistanceFinder(target_marker):
         if (robot.time() - tempTime) > 10:
             print('times up')
             return -1
-        turnSee(BASE_IDS, False, False)
+        turnSee(BASE_IDS, False)
         for base_id in BASE_IDS:
             base_marker = look(base_id)
             if base_marker == None:
+                continue
+            if abs(target_marker.position.horizontal_angle - base_marker.position.horizontal_angle) > 0.5 * math.pi: # If the horizontal angle between the target marker and base marker being calculated is high
                 continue
             base_marker_found = True
             print(f"Base marker calculated for: {base_id}. base distance: {base_marker.position.distance}, target distance: {target_marker.position.distance}")
@@ -574,9 +587,13 @@ def grab():
     robot.sleep(0.8)
 
     # grab box
-    speedDrive(0.2)
     robot.servo_board.servos[0].position = 0.5
     robot.servo_board.servos[1].position = 0.5
+    fastTurn(False)
+    robot.sleep(0.05)
+    fastTurn(True)
+    robot.sleep(0.05)
+    speedDrive(0.2)
 
     if ultrasoundDrive([A4], 0.15) == -1:
         print("Ultrasound driving has failed (we probably don't have an asteroid in the claw)")
@@ -609,6 +626,29 @@ def drop():
     robot.sleep(1)
     brake()
     robot.servo_board.servos[2].position = -0.2
+
+
+
+def goBase(direction, base_marker):
+    seeLeftBase = turnSee(BASE_IDS[base_marker], direction)
+    if seeLeftBase == -1:  # If it can't see base marker 2
+        see_first_base = turnSee(BASE_IDS, direction)  # Then find the first base marker it does see
+        if see_first_base != -1:  # If it has been found, drive to it
+            if correctDrive(see_first_base.id, 500, False) == -1:  # If driving fails, reset
+                drop()
+                reset()
+                return
+        else:  # If no base markers are visible
+            drop()
+            reset()
+            return
+    else:  # If base marker 2 found, drive to it
+        brake()
+        print(f'going to {BASE_IDS[base_marker]} (base)')
+        if correctDrive(BASE_IDS[base_marker], 500, False) == -1:  # If driving fails, reset
+            drop()
+            reset()
+            return
 
 
 # choose asteroid, go to asteroid, go to base, go to spaceship, put asteroid in spaceship, repeat
@@ -668,50 +708,30 @@ def maincycle():
         robot.sleep(0.3)
         brake()
 
+        goBase(False, 3) # go straight to middle
+
+        firstTwo = True
+        if planetDeposit() == -1:
+            drop()
+
+        reset()
+        return
+
     else:
         grab()
 
-    egg_info = eggChecker()
-    is_egg_in_base = egg_info[0]
-    egg_direction_of_turn = not egg_info[1]
+        egg_info = eggChecker()
+        is_egg_in_base = egg_info[0]
+        egg_direction_of_turn = not egg_info[1]
 
-    if is_egg_in_base:
-        eggMover(egg_direction_of_turn)
+        if is_egg_in_base:
+            eggMover(egg_direction_of_turn)
 
-    brake()
-    seeLeftBase = turnSee(BASE_IDS[2], egg_direction_of_turn)
-    if seeLeftBase == -1:  # If it can't see base marker 2
-        see_first_base = turnSee(BASE_IDS)  # Then find the first base marker it does see
-        if see_first_base != -1:  # If it has been found, drive to it
-            if correctDrive(see_first_base.id, 500) == -1:  # If driving fails, reset
-                drop()
-                reset()
-                return
-        else:  # If no base markers are visible
-            drop()
-            reset()
-            return
-    else:  # If base marker 2 found, drive to it
         brake()
-        print(f'going to {BASE_IDS[2]} (base)')
-        if correctDrive(BASE_IDS[2], 500) == -1:  # If driving fails, reset
-            drop()
-            reset()
-            return
 
-    robot.sleep(0.2)
-
-    if collected == 0 and not firstTwo:
-        firstTwo = True
-        if planetDeposit() == -1:
-            reset()
-            return
-        print('turning')
-        fastTurn(False)
+        goBase(egg_direction_of_turn, 2)
 
         robot.sleep(0.2)
-        reset()
-        return
 
     seeSpaceship = None
     if collected < 6:
