@@ -240,11 +240,14 @@ def closestAsteroid():
             if marker.id == (((robot.zone + 2) % 4) * 7) or marker.id == (
                     ((robot.zone + 2) % 4) * 7 - 1) % NUMBER_OF_WALL_MARKERS:
                 seen_opposite_left_id = True
+                print('seen left')
             if marker.id == (((robot.zone + 3) % 4) * 7) or marker.id == (
                     ((robot.zone + 3) % 4) * 7 - 1) % NUMBER_OF_WALL_MARKERS:
                 seen_opposite_right_id = True
+                print('seen right')
             if marker.id == MID_BASE_ID:
                 seen_base_middle_id = True
+                print('seen mid')
             if marker.id in ASTEROID_IDS and isAsteroidRetrievable(marker):
                 asteroids.append(marker)
 
@@ -426,11 +429,7 @@ def spaceshipDeposit(spaceship_id):
 
     collected += 1
 
-    robot.sleep(1)
-    backwardsDrive(0.5)
-    robot.sleep(1)
-    brake()
-    robot.servo_board.servos[2].position = -0.2
+
 
 
 # ⇒ Returns -1 for failure (can't find the base markers)
@@ -587,8 +586,8 @@ def grab():
     robot.sleep(0.8)
 
     # grab box
-    robot.servo_board.servos[0].position = 0.5
-    robot.servo_board.servos[1].position = 0.5
+    robot.servo_board.servos[0].position = 0.4
+    robot.servo_board.servos[1].position = 0.4
     fastTurn(False)
     robot.sleep(0.05)
     fastTurn(True)
@@ -651,11 +650,70 @@ def goBase(direction, base_marker):
             return
 
 
+def retrieveSpaceship(distancetoship):
+    print('retrieveSpaceship()')
+
+    turnSee(spaceship_id, True, True)
+    print('raising')
+    # fully open pincers
+    print('release')
+    robot.servo_board.servos[0].position = -1
+    robot.servo_board.servos[1].position = -1
+    robot.servo_board.servos[2].position = 1
+
+    if correctDrive(spaceship_id, 600) == -1:
+        return -1
+    print('finished correct driving to spaceship')
+
+    brake()
+    robot.sleep(0.2)
+
+    speedDrive(0.2)
+
+    if ultrasoundDrive([A0, A1], 0.6) == -1:  # drive to 0.6m away from spaceship using bottom sensors
+        print("ultrasound failed")
+        drop()
+        reset()
+        return
+
+    brake()
+    robot.sleep(0.8)
+    speedDrive(0.15)
+
+    if ultrasoundDrive([A0, A1], 0.15) == -1:  # drive to 0.45m away from spaceship using bottom sensors
+        print("ultrasound failed")
+        drop()
+        reset()
+        return
+    brake()
+
+    print('lowering')
+    robot.servo_board.servos[2].position = 0
+
+    robot.sleep(1)
+    backwardsDrive(0.5)
+    robot.sleep(distancetoship/500)
+    brake()
+
+    print('raising')
+    robot.servo_board.servos[2].position = 1
+
+    robot.sleep(1)
+    backwardsDrive(0.5)
+    robot.sleep(1)
+    brake()
+
+    robot.servo_board.servos[2].position = -0.2
+    reset()
+
+
 # choose asteroid, go to asteroid, go to base, go to spaceship, put asteroid in spaceship, repeat
 firstTwo = False
 
 
 def maincycle():
+    print(f'I have collected {collected} asteroid/s so far (spaceship)')
+    reclaimSpaceship = False
     # lift up the forklift a bit to ensure no collision with raised platform/other boxes
     # lowered this a bit because box pickup interferred a bit with vision
     robot.servo_board.servos[2].position = -0.6
@@ -740,6 +798,11 @@ def maincycle():
         seeSpaceship = turnSee([PORT_ID, STARBOARD_ID], False, False)
         if seeSpaceship != -1:  # If spaceship has been found
             spaceship_marker = look(seeSpaceship.id)
+            if spaceship_marker.position.distance > 1000 and spaceship_marker.position.distance < 2000:
+                print('spaceship is more than 1m away but less than 2m away')
+                reclaimSpaceship = True
+
+
 
     if collected >= 6 or seeSpaceship == -1:  # If spaceship not found
         if planetDeposit() == -1:
@@ -777,7 +840,28 @@ def maincycle():
         drop()
         reset()
         return
-
+    else:
+        if reclaimSpaceship == False:
+            robot.sleep(1)
+            backwardsDrive(0.5)
+            robot.sleep(1)
+            brake()
+            robot.servo_board.servos[2].position = -0.2
+            return
+        else:
+            robot.servo_board.servos[2].position = 0.1
+            robot.sleep(2)
+            tempTime = robot.time()
+            backwardsDrive(0.2)
+            robot.sleep(2)
+            brake()
+            robot.servo_board.servos[2].position = 1
+            robot.sleep(2)
+            backwardsDrive(0.2)
+            robot.sleep(1)
+            brake()
+            #while ((robot.time() - tempTime) < 10) or robot.arduino.pins[2].digital_read()
+            return
 
 # game time is 150 seconds
 while True:
