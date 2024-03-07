@@ -25,12 +25,12 @@ def see():
 def asteroidScan():
     '''
     Scans the surroundings for asteroids, going clockwise.
-    Scans to between -0.02 to 0.02 radians
+    Scans to between -0.08 to 0.08 radians
     '''
     
     markers = see()
     if markers:
-        while markers[0].position.horizontal_angle < -0.02 and markers[0].position.horizontal_angle > -0.02:
+        while markers[0].position.horizontal_angle < -0.08 and markers[0].position.horizontal_angle > -0.08:
             markers = see()
             mtrs[0].power = TURNSPEED
             mtrs[1].power = -TURNSPEED
@@ -46,5 +46,10 @@ def asteroidApproach():
             mtrs[1].power = DRIVESPEED
     brake()
 
+asteroidScan()
+asteroidApproach()
+mtrs[0].power = -0.3
+mtrs[1].power = 0.3
+robot.sleep(0.5)
 asteroidScan()
 asteroidApproach()
