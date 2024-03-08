@@ -16,8 +16,8 @@ def turn():
     mtrs[1].power = TURNSPEED
 
 def drive():
-    mtrs[0].power = TURNSPEED
-    mtrs[1].power = TURNSPEED
+    mtrs[0].power = DRIVESPEED
+    mtrs[1].power = DRIVESPEED
 
 
 def findTarget(targetid):
@@ -52,6 +52,8 @@ def turnSee(targetid):
     Scans to between -0.08 to 0.08 radians
     '''
     target_marker = findTarget(targetid)
+    if target_marker == None:
+        return -1
     while target_marker.position.horizontal_angle < -0.1 or target_marker.position.horizontal_angle > 0.1:
         target_marker = findTarget(targetid)
         mtrs[0].power = -TURNSPEED
@@ -76,7 +78,9 @@ def asteroidApproach(targetid):
 def main():
     asteroid = closestAsteroid()
     robot.sleep(5)
-    turnSee(asteroid)
+    if turnSee(asteroid) == -1:
+        main()
+        return
     robot.sleep(5)
     asteroidApproach(asteroid)
 
