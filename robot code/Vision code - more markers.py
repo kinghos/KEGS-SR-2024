@@ -14,7 +14,7 @@ def brake():
 
 def turn():
     mtrs[0].power = TURNSPEED
-    mtrs[1].power = TURNSPEED
+    mtrs[1].power = -TURNSPEED
 
 def drive():
     mtrs[0].power = DRIVESPEED
