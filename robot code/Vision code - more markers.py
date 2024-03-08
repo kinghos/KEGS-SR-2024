@@ -5,51 +5,79 @@ ASTEROID_IDS = [i for i in range(150, 200)]
 
 TURNSPEED = 0.2
 DRIVESPEED = 0.3
+
 def brake():
     '''Sets both motors' power to 0.'''
     mtrs[0].power = 0
     mtrs[1].power = 0
 
-def see():
-    '''Returns a list of markers seen by the robot's camera. If no markers are seen after 20 seconds, returns None.'''
-    markers = []
-    startTime = robot.time()
-    while not markers:
-        markers = robot.camera.see()
-        if robot.time() - startTime > 20:
-            print("No markers found")
-            return None
-        robot.sleep(0.05)
-    return markers
+def turn():
+    mtrs[0].power = TURNSPEED
+    mtrs[1].power = TURNSPEED
 
-def asteroidScan():
+def drive():
+    mtrs[0].power = TURNSPEED
+    mtrs[1].power = TURNSPEED
+
+
+def findTarget(targetid):
+    markers = robot.camera.see()
+    for marker in markers:
+        if marker.id == targetid:
+            return marker
+    print(f'look couldnt find {targetid}')
+    return None
+
+
+def closestAsteroid():
+    asteroids = []
+
+    while len(asteroids) == 0:
+        asteroids = [marker for marker in robot.camera.see() if marker in ASTEROID_IDS]
+        turn()
+
+    closest = None
+    for marker in asteroids:
+        if closest == None:
+            closest = marker
+        if marker.position.distance < closest.position.distance:
+            closest = marker
+    
+    return closest
+
+
+def turnSee(targetid):
     '''
     Scans the surroundings for asteroids, going clockwise.
     Scans to between -0.08 to 0.08 radians
     '''
-    
-    markers = see()
-    if markers:
-        while markers[0].position.horizontal_angle < -0.1 or markers[0].position.horizontal_angle > 0.1:
-            markers = see()
-            mtrs[0].power = -TURNSPEED
-            mtrs[1].power = TURNSPEED
-            print(markers[0].position.horizontal_angle)
-            brake()
-            robot.sleep(1)
-    print(f"Found marker, {markers[0]}")
+    target_marker = findTarget(targetid)
+    while target_marker.position.horizontal_angle < -0.1 or target_marker.position.horizontal_angle > 0.1:
+        target_marker = findTarget(targetid)
+        mtrs[0].power = -TURNSPEED
+        mtrs[1].power = TURNSPEED
+        print(target_marker.position.horizontal_angle)
+        brake()
+        robot.sleep(1)
+    print(f"Found marker, {target_marker}")
     brake()
 
-def asteroidApproach():
+
+def asteroidApproach(targetid):
     '''Approaches the nearest asteroid (the one directly ahead)'''
-    markers = see()
-    while markers:
+    target_marker = findTarget(targetid)
+    while target_marker:
         print("driving")
         mtrs[0].power = DRIVESPEED
         mtrs[1].power = DRIVESPEED
     brake()
 
-asteroidScan()
-robot.sleep(5)
-asteroidApproach()
-robot.sleep(5)
+
+def main():
+    asteroid = closestAsteroid()
+    robot.sleep(5)
+    turnSee(asteroid)
+    robot.sleep(5)
+    asteroidApproach(asteroid)
+
+main()
