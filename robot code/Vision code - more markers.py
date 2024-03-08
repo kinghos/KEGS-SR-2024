@@ -5,6 +5,7 @@ ASTEROID_IDS = [i for i in range(150, 200)]
 
 TURNSPEED = 0.2
 DRIVESPEED = 0.3
+WAIT = 1
 
 def brake():
     '''Sets both motors' power to 0.'''
@@ -35,6 +36,8 @@ def closestAsteroid():
     while len(asteroids) == 0:
         asteroids = [marker for marker in robot.camera.see() if marker in ASTEROID_IDS]
         turn()
+        brake()
+        robot.sleep(WAIT)
 
     closest = None
     for marker in asteroids:
@@ -56,11 +59,11 @@ def turnSee(targetid):
         return -1
     while target_marker.position.horizontal_angle < -0.1 or target_marker.position.horizontal_angle > 0.1:
         target_marker = findTarget(targetid)
-        mtrs[0].power = -TURNSPEED
-        mtrs[1].power = TURNSPEED
+        turn()
         print(target_marker.position.horizontal_angle)
+        robot.sleep(2*WAIT/3)
         brake()
-        robot.sleep(1)
+        robot.sleep(WAIT/3)
     print(f"Found marker, {target_marker}")
     brake()
 
@@ -69,9 +72,12 @@ def asteroidApproach(targetid):
     '''Approaches the nearest asteroid (the one directly ahead)'''
     target_marker = findTarget(targetid)
     while target_marker:
+        target_marker = findTarget(targetid)
         print("driving")
-        mtrs[0].power = DRIVESPEED
-        mtrs[1].power = DRIVESPEED
+        drive()
+        robot.sleep(2*WAIT/3)
+        brake()
+        robot.sleep(WAIT/3)
     brake()
 
 
