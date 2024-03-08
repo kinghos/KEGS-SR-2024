@@ -34,8 +34,9 @@ def closestAsteroid():
     asteroids = []
 
     while len(asteroids) == 0:
-        asteroids = [marker for marker in robot.camera.see() if marker in ASTEROID_IDS]
+        asteroids = [marker for marker in robot.camera.see() if marker.id in ASTEROID_IDS]
         turn()
+        robot.sleep(WAIT)
         brake()
         robot.sleep(WAIT)
 
@@ -45,7 +46,7 @@ def closestAsteroid():
             closest = marker
         if marker.position.distance < closest.position.distance:
             closest = marker
-    
+    print(closest)
     return closest
 
 
@@ -57,11 +58,11 @@ def turnSee(targetid):
     target_marker = findTarget(targetid)
     if target_marker == None:
         return -1
-    while target_marker.position.horizontal_angle < -0.1 or target_marker.position.horizontal_angle > 0.1:
+    while target_marker.position.horizontal_angle < -0.3 or target_marker.position.horizontal_angle > 0.3:
         target_marker = findTarget(targetid)
         turn()
         print(target_marker.position.horizontal_angle)
-        robot.sleep(2*WAIT/3)
+        robot.sleep(WAIT/5)
         brake()
         robot.sleep(WAIT/3)
     print(f"Found marker, {target_marker}")
