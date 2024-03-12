@@ -22,6 +22,7 @@ MARKERSDICT = {
 }
 TIMEOUT = 10 # seconds before a vision function times out
 DRIVESPEED = 0.4
+TURNSPEED = 0.25
 
 def brake():
     '''Stop moving robot.'''
@@ -108,7 +109,7 @@ def lookForClosestAsteroid():
                 brake()
                 print(f"Found closest asteroid: {marker.id}")
                 return marker
-        turn(0.3)
+        turn(TURNSPEED)
     brake()
     print("Couldn't find any asteroids")
     return None
@@ -118,12 +119,12 @@ def approachAsteroid(targetMarker): ## TODO Add encoder based routing
     '''Move towards an asteroid until it is within 30mm of the robot.'''
     while marker.position.horizontal_angle > 0.1:
         marker = findMarker(targetMarker.id) # FIXME Add checks for None 
-        print("Horizontal angle: ", marker.position.horizontal_angle)
-        turn(0.2)
+        print("Horizontal angle (>0.1): ", marker.position.horizontal_angle)
+        turn(TURNSPEED)
     while marker.position.horizontal_angle < 0.1:
         marker = findMarker(targetMarker.id) # FIXME Add checks for None 
-        print("Horizontal angle: ", marker.position.horizontal_angle)
-        turn(-0.2)
+        print("Horizontal angle (<0.1): ", marker.position.horizontal_angle)
+        turn(-TURNSPEED)
     print("Aligned with asteroid")
     brake()
     robot.sleep(0.05)
@@ -148,7 +149,7 @@ def approachBase():
                 print(f"Found base: {marker.id}")
                 found == True
                 targetMarker = marker.id
-        turn(0.3)
+        turn(TURNSPEED)
 
     brake()
     if not found:
@@ -158,11 +159,11 @@ def approachBase():
         while marker.position.horizontal_angle > 0.1:
             marker = findMarker(targetMarker.id) # FIXME Add checks for None 
             print("Horizontal angle: ", marker.position.horizontal_angle)
-            turn(0.2)
+            turn(TURNSPEED)
         while marker.position.horizontal_angle < 0.1:
             marker = findMarker(targetMarker.id) # FIXME Add checks for None 
             print("Horizontal angle: ", marker.position.horizontal_angle)
-            turn(-0.2)
+            turn(-TURNSPEED)
         brake()
         print("Aligned with base")
         robot.sleep(0.05)
