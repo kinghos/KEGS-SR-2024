@@ -21,6 +21,7 @@ MARKERSDICT = {
     "starboard": [i for i in range(125, 128)]
 }
 TIMEOUT = 10 # seconds before a vision function times out
+DRIVESPEED = 0.4
 
 def brake():
     '''Stop moving robot.'''
@@ -40,10 +41,13 @@ def turn(speed):
 
 
 def findMarker(targetMarker):
+    brake()
+    robot.sleep(0.25)
     '''Identify a marker based on its ID. Return the marker object if found, else return None.'''
     markers = robot.camera.see()
     for marker in markers:
         if marker.id == targetMarker:
+            print(f"Found {targetMarker}")
             return marker
     print(f"Couldn't find {targetMarker}")
     return None
@@ -61,12 +65,14 @@ def findMarkerType(mType):
 
 def mechanismGrab():
     '''Grab an asteroid'''
+    print("Grabbing asteroid")
     mechanismMotors[0].power = 0.5
     robot.sleep(1.2)
     mechanismMotors[0].power = 0
     
 
 def mechanismRelease():
+    print("Releasing asteroid")
     '''Release an asteroid'''
     mechanismMotors[0].power = -0.5
     robot.sleep(1.2)
@@ -112,19 +118,24 @@ def approachAsteroid(targetMarker): ## TODO Add encoder based routing
     '''Move towards an asteroid until it is within 30mm of the robot.'''
     while marker.position.horizontal_angle > 0.1:
         marker = findMarker(targetMarker.id) # FIXME Add checks for None 
+        print("Horizontal angle: ", marker.position.horizontal_angle)
         turn(0.2)
     while marker.position.horizontal_angle < 0.1:
         marker = findMarker(targetMarker.id) # FIXME Add checks for None 
+        print("Horizontal angle: ", marker.position.horizontal_angle)
         turn(-0.2)
+    print("Aligned with asteroid")
     brake()
     robot.sleep(0.05)
     marker = findMarker(targetMarker.id)
     while marker.position.distance > 30:
         marker = findMarker(targetMarker.id)
-        drive(0.4)
+        print("Distance: ", marker.position.distance)
+        drive(DRIVESPEED)
 
 
 def approachBase():
+    '''Approach the base zone to deposit asteroids'''
     markers = []
     startTime = robot.time()
     found = False
@@ -146,16 +157,20 @@ def approachBase():
     else:
         while marker.position.horizontal_angle > 0.1:
             marker = findMarker(targetMarker.id) # FIXME Add checks for None 
+            print("Horizontal angle: ", marker.position.horizontal_angle)
             turn(0.2)
         while marker.position.horizontal_angle < 0.1:
             marker = findMarker(targetMarker.id) # FIXME Add checks for None 
+            print("Horizontal angle: ", marker.position.horizontal_angle)
             turn(-0.2)
         brake()
+        print("Aligned with base")
         robot.sleep(0.05)
         marker = findMarker(targetMarker) # FIXME Add checks for None
         while marker.position.distance > 200:
             marker = findMarker(targetMarker.id)
-            drive(0.4)
+            print("Distance: ", marker.position.distance)
+            drive(DRIVESPEED)
         return True
 
 def main():
