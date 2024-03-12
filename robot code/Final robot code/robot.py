@@ -11,7 +11,10 @@ uno = robot.arduino
 CPR = 2 * pi / (4 * 11)
 WHEEL_DIAMETER = 80
 MARKERSDICT = {
-    "boundary": [i for i in range(28)],
+    "planet 0": [i for i in range(7)],
+    "planet 1": [i for i in range(7, 14)],
+    "planet 2": [i for i in range(14, 21)],
+    "planet 3": [i for i in range(21, 28)],
     "asteroid": [i for i in range(150, 200)],
     "egg": [110],
     "port": [i for i in range(120, 124)],
@@ -124,7 +127,7 @@ def approachAsteroid(targetMarker): ## TODO Add encoder based routing
 def approachBase():
     markers = []
     startTime = robot.time()
-    
+
 
 
 def main():
