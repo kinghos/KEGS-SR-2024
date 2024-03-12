@@ -103,6 +103,8 @@ def lookForClosestAsteroid():
     markers = []
     startTime = robot.time()
     while robot.time() - startTime < TIMEOUT:
+        brake()
+        robot.sleep(0.25)
         markers = robot.camera.see()
         for marker in markers:
             if marker.id in MARKERSDICT["asteroid"]:
@@ -142,6 +144,8 @@ def approachBase():
     found = False
     targetMarker = 0
     while robot.time() - startTime < TIMEOUT and not found:
+        brake()
+        robot.sleep(0.25)
         markers = robot.camera.see()
         for marker in markers:
             if marker.id in MARKERSDICT["planet " + str(robot.zone)]:
