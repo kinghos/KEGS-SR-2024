@@ -109,32 +109,62 @@ def lookForClosestAsteroid():
     
 
 def approachAsteroid(targetMarker): ## TODO Add encoder based routing
-    '''Move towards an asteroid, and pick it up.'''
+    '''Move towards an asteroid until it is within 30mm of the robot.'''
     while marker.position.horizontal_angle > 0.1:
-        marker = findMarker(targetMarker) # FIXME Add checks for None 
+        marker = findMarker(targetMarker.id) # FIXME Add checks for None 
         turn(0.2)
     while marker.position.horizontal_angle < 0.1:
-        marker = findMarker(targetMarker) # FIXME Add checks for None 
+        marker = findMarker(targetMarker.id) # FIXME Add checks for None 
         turn(-0.2)
     brake()
     robot.sleep(0.05)
-    marker = findMarker(targetMarker)
+    marker = findMarker(targetMarker.id)
     while marker.position.distance > 30:
-        marker = findMarker(targetMarker)
+        marker = findMarker(targetMarker.id)
         drive(0.4)
 
 
 def approachBase():
     markers = []
     startTime = robot.time()
+    found = False
+    targetMarker = 0
+    while robot.time() - startTime < TIMEOUT and not found:
+        markers = robot.camera.see()
+        for marker in markers:
+            if marker.id in MARKERSDICT["planet " + str(robot.zone)]:
+                brake()
+                print(f"Found base: {marker.id}")
+                found == True
+                targetMarker = marker.id
+        turn(0.3)
 
-
+    brake()
+    if not found:
+        print("Couldn't find base")
+        return None
+    else:
+        while marker.position.horizontal_angle > 0.1:
+            marker = findMarker(targetMarker.id) # FIXME Add checks for None 
+            turn(0.2)
+        while marker.position.horizontal_angle < 0.1:
+            marker = findMarker(targetMarker.id) # FIXME Add checks for None 
+            turn(-0.2)
+        brake()
+        robot.sleep(0.05)
+        marker = findMarker(targetMarker) # FIXME Add checks for None
+        while marker.position.distance > 200:
+            marker = findMarker(targetMarker.id)
+            drive(0.4)
+        return True
 
 def main():
-    approachAsteroid()
-    mechanismGrab()
-    approachBase()
-    mechanismRelease()
+    while True:
+        marker = lookForClosestAsteroid()
+        approachAsteroid(marker)
+        mechanismGrab()
+        approachBase()
+        mechanismRelease()
     
     # check if egg in base
 
