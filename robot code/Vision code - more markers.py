@@ -12,9 +12,13 @@ def brake():
     mtrs[0].power = 0
     mtrs[1].power = 0
 
-def turn():
-    mtrs[0].power = TURNSPEED
-    mtrs[1].power = -TURNSPEED
+def turn(dir=True):
+    if dir: 
+        mtrs[0].power = TURNSPEED
+        mtrs[1].power = -TURNSPEED
+    else:
+        mtrs[0].power = -TURNSPEED
+        mtrs[1].power = TURNSPEED
 
 def drive():
     mtrs[0].power = DRIVESPEED
@@ -30,12 +34,12 @@ def findTarget(targetid):
     return None
 
 
-def closestAsteroid():
+def closestAsteroid(clockwise_turn=True):
     asteroids = []
 
     while len(asteroids) == 0:
         asteroids = [marker for marker in robot.camera.see() if marker.id in ASTEROID_IDS]
-        turn()
+        turn(clockwise_turn)
         robot.sleep(WAIT)
         brake()
         robot.sleep(WAIT)
@@ -47,29 +51,39 @@ def closestAsteroid():
         if marker.position.distance < closest.position.distance:
             closest = marker
     print(closest)
+    brake()
     return closest
 
 
-def turnSee(targetid):
+def turnSee(targetid, clockwise_turn):
     '''
     Scans the surroundings for asteroids, going clockwise.
     Scans to between -0.08 to 0.08 radians
     '''
+    print("TUNSEE")
     target_marker = findTarget(targetid)
-    if target_marker == None:
-        return -1
+    while target_marker == None:
+        print("Nonefound turnsee")
+        turn(clockwise_turn)
+        robot.sleep(WAIT/2)
+        brake()
+        robot.sleep(WAIT)
+        target_marker = findTarget(targetid)
+        print(target_marker)
+    print("correctng")
     while target_marker.position.horizontal_angle < -0.3 or target_marker.position.horizontal_angle > 0.3:
         target_marker = findTarget(targetid)
-        turn()
+        turn(clockwise_turn)
         print(target_marker.position.horizontal_angle)
-        robot.sleep(WAIT/5)
+        robot.sleep(WAIT/2)
         brake()
-        robot.sleep(WAIT/3)
+        robot.sleep(WAIT)
     print(f"Found marker, {target_marker}")
     brake()
 
 
 def asteroidApproach(targetid):
+    print("APPROACH")
     '''Approaches the nearest asteroid (the one directly ahead)'''
     target_marker = findTarget(targetid)
     while target_marker:
@@ -83,12 +97,12 @@ def asteroidApproach(targetid):
 
 
 def main():
-    asteroid = closestAsteroid()
-    robot.sleep(5)
-    if turnSee(asteroid) == -1:
+    asteroid = closestAsteroid(True)
+    robot.sleep(1)
+    if turnSee(asteroid.id, False) == -1:
         main()
         return
-    robot.sleep(5)
-    asteroidApproach(asteroid)
+    robot.sleep(1)
+    asteroidApproach(asteroid.id)
 
 main()
