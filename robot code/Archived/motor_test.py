@@ -1,8 +1,8 @@
 from sr.robot3 import *
 robot = Robot()
 
-drive_board = robot.motor_board["SR0UK1L"].motors
-mech_board = robot.motor_board["SR0KJ15"].motors
+drive_board = robot.motor_boards["SR0UK1L"].motors
+mech_board = robot.motor_boards["SR0KJ15"].motors
 
 def brake():
     drive_board[0].power = 0
