@@ -87,7 +87,7 @@ def asteroidApproach(targetid):
     print("APPROACH")
     '''Approaches the nearest asteroid (the one directly ahead)'''
     target_marker = findTarget(targetid)
-    while target_marker:
+    while target_marker.position.distance > 30:
         target_marker = findTarget(targetid)
         print("driving")
         drive()
