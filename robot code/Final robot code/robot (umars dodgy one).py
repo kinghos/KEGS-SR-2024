@@ -37,11 +37,11 @@ def findTarget(targetid):
 
 def closestAsteroid(clockwise_turn=True):
     asteroids = []
-
+    print("closestasteroid")
     while len(asteroids) == 0:
         asteroids = [marker for marker in robot.camera.see() if marker.id in ASTEROID_IDS]
         turn(clockwise_turn)
-        robot.sleep(3*WAIT)
+        robot.sleep(WAIT/2)
         brake()
         robot.sleep(WAIT)
 
@@ -66,7 +66,7 @@ def turnSee(targetid, clockwise_turn, threshold):
     while target_marker == None:
         print("Nonefound turnsee")
         turn(clockwise_turn)
-        robot.sleep(2*WAIT)
+        robot.sleep(1.5*WAIT)
         brake()
         robot.sleep(WAIT)
         target_marker = findTarget(targetid)
@@ -76,7 +76,7 @@ def turnSee(targetid, clockwise_turn, threshold):
         target_marker = findTarget(targetid)
         turn(clockwise_turn)
         print(target_marker.position.horizontal_angle)
-        robot.sleep(WAIT/2)
+        robot.sleep(1.25*WAIT)
         brake()
         robot.sleep(WAIT)
     print(f"Found marker, {target_marker}")
