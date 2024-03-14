@@ -23,6 +23,8 @@ MARKERSDICT = {
 TIMEOUT = 10 # seconds before a vision function times out
 DRIVESPEED = 0.4
 TURNSPEED = 0.25
+DISTANCETHRESHOLD = 50 # mm
+ANGLETHRESHOLD = 0.1 # radians
 
 def brake():
     '''Stop moving robot.'''
@@ -101,40 +103,75 @@ def calculateDistance(encoderCount, motor=None):
 
 def lookForClosestAsteroid():
     markers = []
+    asteroids = []
+    print("Looking for closest asteroid")
     startTime = robot.time()
+
     while robot.time() - startTime < TIMEOUT:
-        brake()
         robot.sleep(0.25)
+        brake()
+        robot.sleep(0.1)
+
         markers = robot.camera.see()
         for marker in markers:
             if marker.id in MARKERSDICT["asteroid"]:
-                brake()
-                print(f"Found closest asteroid: {marker.id}")
-                return marker
+                print(f"Found asteroid: {marker.id}")
+                asteroids.append(marker)
         turn(TURNSPEED)
+
     brake()
+    closestAsteroid = None
+    minimum = float("inf")
+    for marker in asteroids:
+        if marker.position.distance < minimum:
+            mimimum = marker.position.distance
+            closestAsteroid = marker
+    print("Closest asteroid: ", closestAsteroid.id)
+    return closestAsteroid
+            
     print("Couldn't find any asteroids")
     return None
     
 
 def approachAsteroid(targetMarker): ## TODO Add encoder based routing
     '''Move towards an asteroid until it is within 30mm of the robot.'''
-    while marker.position.horizontal_angle > 0.1:
-        marker = findMarker(targetMarker.id) # FIXME Add checks for None 
-        print("Horizontal angle (>0.1): ", marker.position.horizontal_angle)
-        turn(TURNSPEED)
-    while marker.position.horizontal_angle < 0.1:
-        marker = findMarker(targetMarker.id) # FIXME Add checks for None 
-        print("Horizontal angle (<0.1): ", marker.position.horizontal_angle)
-        turn(-TURNSPEED)
-    print("Aligned with asteroid")
-    brake()
-    robot.sleep(0.05)
     marker = findMarker(targetMarker.id)
-    while marker.position.distance > 30:
+    while marker.position.distance > DISTANCETHRESHOLD:
         marker = findMarker(targetMarker.id)
         print("Distance: ", marker.position.distance)
         drive(DRIVESPEED)
+
+def turnSee(targetid):
+    '''
+    Scans the surroundings for asteroids, going clockwise.
+    Scans to between -0.08 to 0.08 radians
+    '''
+    print("Looking for marker", targetid)
+    target_marker = findMarker(targetid)
+    while target_marker == None:
+        print("Marker not found, turning to find it")
+        turn(TURNSPEED)
+        robot.sleep(0.25)
+        brake()
+        robot.sleep(0.1)
+        target_marker = findMarker(targetid)
+        print("Looking for marker", targetid)
+    
+    print("Correcting angle")
+    while target_marker.position.horizontal_angle < -ANGLETHRESHOLD or target_marker.position.horizontal_angle > ANGLETHRESHOLD:
+        target_marker = findMarker(targetid)
+        if target_marker == None:
+            return -1
+        if target_marker.position.horizontal_angle < -ANGLETHRESHOLD:
+            turn(TURNSPEED)
+        if target_marker.position.horizontal_angle > ANGLETHRESHOLD:
+            turn(-TURNSPEED)
+        print(f"Horizontal angle: {target_marker.position.horizontal_angle}")
+        robot.sleep(0.3)
+        brake()
+        robot.sleep(0.1)
+    print(f"Found marker, {target_marker}")
+    brake()
 
 
 def approachBase():
@@ -181,11 +218,14 @@ def approachBase():
 def main():
     while True:
         marker = lookForClosestAsteroid()
+        turnSee(marker.id)
         approachAsteroid(marker)
-        mechanismGrab()
+        drive(DRIVESPEED)
+        robot.sleep(1.2)
+        brake()
+        driveMotors[0].power = DRIVESPEED
+        robot.sleep(1)
+        brake()
         approachBase()
-        mechanismRelease()
     
-    # check if egg in base
-
-    
+main()
