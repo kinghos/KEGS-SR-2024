@@ -74,7 +74,12 @@ def turnSee(targetid, clockwise_turn, threshold):
     print("correctng")
     while target_marker.position.horizontal_angle < -threshold or target_marker.position.horizontal_angle > threshold:
         target_marker = findTarget(targetid)
-        turn(clockwise_turn)
+        if target_marker == None:
+            return -1
+        if target_marker.position.horizontal_angle < -threshold:
+            turn(True)
+        if target_marker.position.horizontal_angle > threshold:
+            turn(False)
         print(target_marker.position.horizontal_angle)
         robot.sleep(1.25*WAIT)
         brake()
