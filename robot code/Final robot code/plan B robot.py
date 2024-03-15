@@ -15,24 +15,25 @@ WHEEL_DIAMETER = 80
 ASTEROID_IDS = [i for i in range(150, 200)]
 BASE_IDS = [i for i in range(8)]
 
-TURNSPEED = 0.22
+TURNSPEED = 0.16
 DRIVESPEED = 0.3
-WAIT = 0.4
+WAIT = 0.25
 
-TIMEOUT = 10
+TIMEOUT = 40
 
 def brake():
     '''Sets both motors' power to 0.'''
     mtrs[0].power = 0
     mtrs[1].power = 0
 
-def turn(dir=True): #fix this - is dir clockwise or anticlockwise?
-    if dir: 
-        mtrs[0].power = TURNSPEED
-        mtrs[1].power = -TURNSPEED
+'''Speed level of 0 means default speed, and levels above that are added'''
+def turn(clockwise=True, speed_level=0): #fix this - is dir clockwise or anticlockwise?
+    if clockwise: 
+        mtrs[0].power = (TURNSPEED+speed_level)
+        mtrs[1].power = -(TURNSPEED+speed_level+0.16)
     else:
-        mtrs[0].power = -TURNSPEED
-        mtrs[1].power = TURNSPEED
+        mtrs[0].power = -(TURNSPEED+speed_level+0.16)
+        mtrs[1].power = (TURNSPEED+speed_level)
 
 def drive():
     mtrs[0].power = DRIVESPEED
@@ -58,7 +59,7 @@ def getEncoderCount(motor):
 
 def calculateDistance(encoderCount, motor=None):
     distance = (encoderCount / CPR) * pi * WHEEL_DIAMETER # Distance in mm
-    print(f"Motor: {motor:<4}\t Count: {encoderCount:<10}\t Distance: {distance/1000:<10.4f}m")
+    print(f"Motor: {motor:<4}\t Count: {str(encoderCount):<10}\t Distance: {str(distance/1000):<10.4f}m")
     return distance
 
 
@@ -81,7 +82,7 @@ def closestMarker(clockwise_turn, type):
     while len(markers) == 0 and robot.time() - startTime < TIMEOUT:
         markers = [marker for marker in robot.camera.see() if marker.id in type]
         turn(clockwise_turn)
-        robot.sleep(1.5*WAIT)
+        robot.sleep(2*WAIT)
         brake()
         robot.sleep(WAIT)
 
@@ -116,19 +117,23 @@ def turnSee(targetid, clockwise_turn, threshold):
         target_marker = findTarget(targetid)
         if target_marker == None:
             return -1
-        if target_marker.position.horizontal_angle < -threshold:
+        if target_marker.position.horizontal_angle < -3*threshold:
+            turn(False, 0.2)
+        if target_marker.position.horizontal_angle > 3*threshold:
+            turn(True, 0.2)
+        elif target_marker.position.horizontal_angle < -threshold:
             turn(False)
-        if target_marker.position.horizontal_angle > threshold:
+        elif target_marker.position.horizontal_angle > threshold:
             turn(True)
         print(target_marker.position.horizontal_angle)
-        robot.sleep(1.25*WAIT)
+        robot.sleep(0.9*WAIT)
         brake()
         robot.sleep(WAIT)
     print(f"Found marker, {target_marker}")
     brake()
 
 
-def markerApproach(targetid, distance=600, threshold=0.05):
+def markerApproach(targetid, distance, threshold=0.1):
     print("APPROACH")
     '''Approaches the nearest asteroid (the one directly ahead)'''
     target_marker = findTarget(targetid)
@@ -152,28 +157,40 @@ def markerApproach(targetid, distance=600, threshold=0.05):
 def main():
     print("START")
     asteroid = closestMarker(True, ASTEROID_IDS)
+    while asteroid == None:
+        reverse()
+        robot.sleep(2)
+        brake()
+        robot.sleep(WAIT)
+        asteroid = closestMarker(True, ASTEROID_IDS)
     robot.sleep(WAIT)
-    if turnSee(asteroid.id, False, 0.1) == -1:
+    if turnSee(asteroid.id, False, 0.05) == -1:
         main()
         return
-    if markerApproach(asteroid.id) == -1:
+    if markerApproach(asteroid.id, 700) == -1:
         main()
         return
     drive()
-    robot.sleep(3)
+    robot.sleep(1.5)
     brake()
     robot.sleep(WAIT)
     mtrs[0].power = 0.3
     robot.sleep(0.5)
     brake()
     base = closestMarker(True, BASE_IDS)
+    while base == None:
+        reverse()
+        robot.sleep(2)
+        brake()
+        robot.sleep(WAIT)
+        asteroid = closestMarker(True, BASE_IDS)
     if turnSee(base.id, False, 0.2) == -1:
         main()
         return
-    while markerApproach(base.id, 750, 0.3) == -1:
-        markerApproach(base.id)
+    while markerApproach(base.id, 1500, 0.3) == -1:
+        markerApproach(base.id, 1500, 0.3)
     drive()
-    robot.sleep(1)
+    robot.sleep(2)
     brake()
     robot.sleep(WAIT)
     reverse()
