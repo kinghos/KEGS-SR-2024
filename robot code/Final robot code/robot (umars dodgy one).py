@@ -1,6 +1,17 @@
+"""
+    Current robot code for plan B (no mechanism)
+    
+"""
+
 from sr.robot3 import *
+from math import pi
+
 robot = Robot()
 mtrs = robot.motor_boards["SR0UK1L"].motors
+uno = robot.arduino
+
+CPR = 2 * pi / (4 * 11)
+WHEEL_DIAMETER = 80
 ASTEROID_IDS = [i for i in range(150, 200)]
 BASE_IDS = [i for i in range(8)]
 
@@ -28,6 +39,25 @@ def drive():
 def reverse():
     mtrs[0].power = -DRIVESPEED
     mtrs[1].power = -DRIVESPEED
+
+
+def getEncoderCount(motor):
+    if motor == "left":
+        command = "e"
+    else:
+        command = "f"
+    while True:
+        robot.sleep(0.05)
+        strEncoderCount = uno.command(command)
+        if strEncoderCount: # Checks for non-empty string
+            encoderCount = float(strEncoderCount)
+            return encoderCount
+    
+
+def calculateDistance(encoderCount, motor=None):
+    distance = (encoderCount / CPR) * pi * WHEEL_DIAMETER # Distance in mm
+    print(f"Motor: {motor:<4}\t Count: {encoderCount:<10}\t Distance: {distance/1000:<10.4f}m")
+    return distance
 
 
 def findTarget(targetid):
@@ -62,8 +92,8 @@ def closestMarker(clockwise_turn=True, type=ASTEROID_IDS):
 
 def turnSee(targetid, clockwise_turn, threshold):
     '''
-    Scans the surroundings for asteroids, going clockwise.
-    Scans to between -0.08 to 0.08 radians
+    Scans the surroundings for targetid marker, going clockwise (clockwise_turn = True) or anticlockwise (clockwise_turn = False).
+    Scans to between -threshold to threshold radians
     '''
     print("turnsee")
     target_marker = findTarget(targetid)
