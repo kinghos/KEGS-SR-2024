@@ -2,11 +2,11 @@ from sr.robot3 import *
 robot = Robot()
 mtrs = robot.motor_boards["SR0UK1L"].motors
 ASTEROID_IDS = [i for i in range(150, 200)]
-ARENA_IDS = [i for i in range(8)]
+BASE_IDS = [i for i in range(8)]
 
-TURNSPEED = 0.2
+TURNSPEED = 0.22
 DRIVESPEED = 0.3
-WAIT = 0.5
+WAIT = 0.4
 
 def brake():
     '''Sets both motors' power to 0.'''
@@ -25,6 +25,10 @@ def drive():
     mtrs[0].power = DRIVESPEED
     mtrs[1].power = DRIVESPEED
 
+def reverse():
+    mtrs[0].power = -DRIVESPEED
+    mtrs[1].power = -DRIVESPEED
+
 
 def findTarget(targetid):
     markers = robot.camera.see()
@@ -35,18 +39,18 @@ def findTarget(targetid):
     return None
 
 
-def closestAsteroid(clockwise_turn=True):
-    asteroids = []
-    print("closestasteroid")
-    while len(asteroids) == 0:
-        asteroids = [marker for marker in robot.camera.see() if marker.id in ASTEROID_IDS]
+def closestMarker(clockwise_turn=True, type=ASTEROID_IDS):
+    markers = []
+    print("closestMarker")
+    while len(markers) == 0:
+        markers = [marker for marker in robot.camera.see() if marker.id in type]
         turn(clockwise_turn)
-        robot.sleep(WAIT/2)
+        robot.sleep(1.5*WAIT)
         brake()
         robot.sleep(WAIT)
 
     closest = None
-    for marker in asteroids:
+    for marker in markers:
         if closest == None:
             closest = marker
         if marker.position.distance < closest.position.distance:
@@ -61,12 +65,12 @@ def turnSee(targetid, clockwise_turn, threshold):
     Scans the surroundings for asteroids, going clockwise.
     Scans to between -0.08 to 0.08 radians
     '''
-    print("TUNSEE")
+    print("turnsee")
     target_marker = findTarget(targetid)
     while target_marker == None:
         print("Nonefound turnsee")
         turn(clockwise_turn)
-        robot.sleep(1.5*WAIT)
+        robot.sleep(WAIT)
         brake()
         robot.sleep(WAIT)
         target_marker = findTarget(targetid)
@@ -77,9 +81,9 @@ def turnSee(targetid, clockwise_turn, threshold):
         if target_marker == None:
             return -1
         if target_marker.position.horizontal_angle < -threshold:
-            turn(True)
-        if target_marker.position.horizontal_angle > threshold:
             turn(False)
+        if target_marker.position.horizontal_angle > threshold:
+            turn(True)
         print(target_marker.position.horizontal_angle)
         robot.sleep(1.25*WAIT)
         brake()
@@ -88,81 +92,55 @@ def turnSee(targetid, clockwise_turn, threshold):
     brake()
 
 
-def asteroidApproach(targetid):
+def markerApproach(targetid, distance=600, threshold=0.05):
     print("APPROACH")
     '''Approaches the nearest asteroid (the one directly ahead)'''
     target_marker = findTarget(targetid)
-    while target_marker.position.distance > 30:
+    if target_marker == None:
+        return -1
+    while target_marker.position.distance > distance:
         target_marker = findTarget(targetid)
+        if target_marker == None:
+            return -1
+        if target_marker.position.distance <= distance:
+            break
         print("driving")
         drive()
-        robot.sleep(2*WAIT/3)
+        robot.sleep(WAIT)
         brake()
-        robot.sleep(WAIT/3)
-        turnSee(target_marker.id, False, 0.2)
+        robot.sleep(WAIT)
+        turnSee(target_marker.id, False, threshold)
     brake()
 
-
-def approachBase():
-    '''Approach the base zone to deposit asteroids'''
-    markers = []
-    startTime = robot.time()
-    found = False
-    targetMarker = 0
-    while robot.time() - startTime < 10 and not found:
-        brake()
-        robot.sleep(0.25)
-        markers = robot.camera.see()
-        minimum = float("inf")
-        for marker in markers:
-            if marker.id in ARENA_IDS and marker.position.distance < minimum:
-                brake()
-                print(f"Found base: {marker.id}")
-                minimum = marker.position.distance
-                found == True
-                targetMarker = marker.id
-                
-        turn(TURNSPEED)
-
-    brake()
-    if not found:
-        print("Couldn't find base")
-        return None
-    else:
-        while marker.position.horizontal_angle > 0.1:
-            marker = targetMarker(targetMarker.id) # FIXME Add checks for None 
-            print("Horizontal angle: ", marker.position.horizontal_angle)
-            turn(True)
-        while marker.position.horizontal_angle < 0.1:
-            marker = targetMarker(targetMarker.id) # FIXME Add checks for None 
-            print("Horizontal angle: ", marker.position.horizontal_angle)
-            turn(False)
-        brake()
-        print("Aligned with base")
-        robot.sleep(0.05)
-        marker = targetMarker(targetMarker) # FIXME Add checks for None
-        while marker.position.distance > 200:
-            marker = targetMarker(targetMarker.id)
-            print("Distance: ", marker.position.distance)
-            drive()
-        return True
 
 def main():
-    asteroid = closestAsteroid(True)
+    print("START")
+    asteroid = closestMarker(True, ASTEROID_IDS)
     robot.sleep(WAIT)
     if turnSee(asteroid.id, False, 0.1) == -1:
         main()
         return
+    if markerApproach(asteroid.id) == -1:
+        main()
+        return
+    drive()
+    robot.sleep(3)
+    brake()
     robot.sleep(WAIT)
-    asteroidApproach(asteroid.id)
+    mtrs[0].power = 0.3
+    robot.sleep(0.5)
+    brake()
+    base = closestMarker(True, BASE_IDS)
+    if turnSee(base.id, False, 0.2) == -1:
+        main()
+        return
+    while markerApproach(base.id, 750, 0.3) == -1:
+        markerApproach(base.id)
     drive()
     robot.sleep(1)
     brake()
     robot.sleep(WAIT)
-    mtrs[0].power = 0.3
-    robot.sleep(1)
-    brake()
-    approachBase()
+    reverse()
 
-
-main()
+while True:
+    main()
