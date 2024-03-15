@@ -1,6 +1,6 @@
 """
     Current robot code for plan B (no mechanism)
-    
+
 """
 
 from sr.robot3 import *
@@ -19,12 +19,14 @@ TURNSPEED = 0.22
 DRIVESPEED = 0.3
 WAIT = 0.4
 
+TIMEOUT = 10
+
 def brake():
     '''Sets both motors' power to 0.'''
     mtrs[0].power = 0
     mtrs[1].power = 0
 
-def turn(dir=True):
+def turn(dir=True): #fix this - is dir clockwise or anticlockwise?
     if dir: 
         mtrs[0].power = TURNSPEED
         mtrs[1].power = -TURNSPEED
@@ -61,6 +63,7 @@ def calculateDistance(encoderCount, motor=None):
 
 
 def findTarget(targetid):
+    '''Identify a marker based on its ID. Return the marker object if found, else return None.'''
     markers = robot.camera.see()
     for marker in markers:
         if marker.id == targetid:
@@ -69,10 +72,13 @@ def findTarget(targetid):
     return None
 
 
-def closestMarker(clockwise_turn=True, type=ASTEROID_IDS):
+def closestMarker(clockwise_turn, type):
+    '''Returns None if not found / timeout'''
     markers = []
     print("closestMarker")
-    while len(markers) == 0:
+    startTime = robot.time()
+
+    while len(markers) == 0 and robot.time() - startTime < TIMEOUT:
         markers = [marker for marker in robot.camera.see() if marker.id in type]
         turn(clockwise_turn)
         robot.sleep(1.5*WAIT)
