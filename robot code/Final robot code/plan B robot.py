@@ -153,6 +153,16 @@ def markerApproach(targetid, distance, threshold=0.1):
         turnSee(target_marker.id, False, threshold)
     brake()
 
+def encoderDrive(distance):
+    startTime = robot.time()
+    while robot.time() - startTime < TIMEOUT:
+        drive()
+        encoderCount = getEncoderCount("left")
+        encoderDistance = calculateDistance(encoderCount, "left")
+        if encoderDistance >= (distance + 50):
+            brake()
+            return
+        robot.sleep(0.1)
 
 def main():
     print("START")
@@ -170,9 +180,7 @@ def main():
     if markerApproach(asteroid.id, 700) == -1:
         main()
         return
-    drive()
-    robot.sleep(1.5)
-    brake()
+    encoderDrive(700)
     robot.sleep(WAIT)
     mtrs[0].power = 0.3
     robot.sleep(0.5)
