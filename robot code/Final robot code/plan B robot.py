@@ -139,6 +139,8 @@ def markerApproach(targetid, distance, threshold=0.1):
     target_marker = findTarget(targetid)
     if target_marker == None:
         return -1
+    
+    prevDistance = calculateDistance(getEncoderCount("left"))
     while target_marker.position.distance > distance:
         target_marker = findTarget(targetid)
         if target_marker == None:
@@ -148,9 +150,15 @@ def markerApproach(targetid, distance, threshold=0.1):
         print("driving")
         drive()
         robot.sleep(WAIT)
+        print(f"Motor currents/A: {mtrs[0].current}; {mtrs[1].current}")
+        currDistance = calculateDistance(getEncoderCount("left"))
+        if currDistance - prevDistance < 20: #if we haven't moved more than 20mm since last repetition of while loop
+            print("We may be stuck...")
+            helpICantSee() #FIXME: change to helpImStuck later
         brake()
         robot.sleep(WAIT)
         turnSee(target_marker.id, False, threshold)
+        prevDistance = currDistance
     brake()
 
 def encoderDrive(distance):
@@ -187,6 +195,15 @@ def helpImStuck():
 
 def release():
     return
+
+def eggChecker():
+    if findTarget(110) != None and any([findTarget(base_id) for base_id in BASE_IDS]):
+        print("I see the egg and a base id at the same time!!!!!")
+        turnSee(110, False, 0.05)
+        markerApproach(110, 700)
+        encoderDrive(700)
+        print("I have got the egg") #FIXME: ADD EGGMOVING CODE TO MOVE TO ANOTHER BASE
+        print("eggchecker returning")
 
 def main():
     print("START")
