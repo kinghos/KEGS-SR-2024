@@ -5,6 +5,7 @@
 
 from sr.robot3 import *
 from math import pi
+from random import randint
 
 robot = Robot()
 mtrs = robot.motor_boards["SR0UK1L"].motors
@@ -35,9 +36,9 @@ def turn(clockwise=True, speed_level=0):
         mtrs[0].power = -(2*TURNSPEED+speed_level)
         mtrs[1].power = (TURNSPEED+speed_level)
 
-def drive():
-    mtrs[0].power = DRIVESPEED
-    mtrs[1].power = DRIVESPEED
+def drive(speed_level=0):
+    mtrs[0].power = DRIVESPEED+speed_level
+    mtrs[1].power = DRIVESPEED+speed_level
 
 def reverse():
     mtrs[0].power = -DRIVESPEED
@@ -168,14 +169,31 @@ def encoderDrive(distance):
             return
         robot.sleep(0.1)
 
+
+def helpICantSee():
+    match randint(0,2):
+        case 0:
+            reverse()
+        case 1: 
+            turn(True, 0.5)
+        case 2:
+            drive(0.5)
+    robot.sleep(2)
+    brake()
+    robot.sleep(WAIT)
+
+def helpImStuck():
+    return
+
+def release():
+    return
+
 def main():
     print("START")
+
     asteroid = closestMarker(True, ASTEROID_IDS)
     while asteroid == None:
-        reverse()
-        robot.sleep(2)
-        brake()
-        robot.sleep(WAIT)
+        helpICantSee()
         asteroid = closestMarker(True, ASTEROID_IDS)
     robot.sleep(WAIT)
     if turnSee(asteroid.id, False, 0.05) == -1:
@@ -189,12 +207,10 @@ def main():
     mtrs[0].power = 0.3
     robot.sleep(0.5)
     brake()
+
     base = closestMarker(True, BASE_IDS)
     while base == None:
-        reverse()
-        robot.sleep(2)
-        brake()
-        robot.sleep(WAIT)
+        helpICantSee()
         asteroid = closestMarker(True, BASE_IDS)
     if turnSee(base.id, False, 0.2) == -1:
         main()
@@ -205,7 +221,11 @@ def main():
     robot.sleep(2)
     brake()
     robot.sleep(WAIT)
+
+    release()
+
     reverse()
+    robot.sleep(2)
 
 while True:
     main()
