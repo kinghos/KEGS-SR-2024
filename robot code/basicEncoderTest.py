@@ -5,7 +5,7 @@ robot = Robot()
 mts = robot.motor_board.motors
 arduino = robot.arduino
 
-CPR = 2 * math.pi / (4 * 11)
+CPR = 2 * math.pi * 1000/ (4*11 * 0.229)
 WHEEL_DIAMETER = 80
 encoderCount = 0
 
