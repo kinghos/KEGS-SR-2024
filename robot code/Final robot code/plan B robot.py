@@ -10,12 +10,12 @@ robot = Robot()
 mtrs = robot.motor_boards["SR0UK1L"].motors
 uno = robot.arduino
 
-CPR = 2 * pi / (4 * 11)
+CPR = 2 * pi * 1000/ (4*11 * 0.229) # Magic functioning as of 19.03.24
 WHEEL_DIAMETER = 80
 ASTEROID_IDS = [i for i in range(150, 200)]
 BASE_IDS = [i for i in range(8)]
 
-TURNSPEED = 0.16
+TURNSPEED = 0.18
 DRIVESPEED = 0.3
 WAIT = 0.25
 
@@ -27,12 +27,12 @@ def brake():
     mtrs[1].power = 0
 
 '''Speed level of 0 means default speed, and levels above that are added'''
-def turn(clockwise=True, speed_level=0): #fix this - is dir clockwise or anticlockwise?
+def turn(clockwise=True, speed_level=0):
     if clockwise: 
         mtrs[0].power = (TURNSPEED+speed_level)
-        mtrs[1].power = -(TURNSPEED+speed_level+0.16)
+        mtrs[1].power = -(2*TURNSPEED+speed_level)
     else:
-        mtrs[0].power = -(TURNSPEED+speed_level+0.16)
+        mtrs[0].power = -(2*TURNSPEED+speed_level)
         mtrs[1].power = (TURNSPEED+speed_level)
 
 def drive():
@@ -153,14 +153,17 @@ def markerApproach(targetid, distance, threshold=0.1):
     brake()
 
 def encoderDrive(distance):
+    print("encoderdrive")
     startTime = robot.time()
-    startDistance = getEncoderCount("left")
+    startDistance = calculateDistance(getEncoderCount("left"))
+    print("start: ", startDistance)
     while robot.time() - startTime < TIMEOUT:
         drive()
         encoderCount = getEncoderCount("left")
         encoderDistance = calculateDistance(encoderCount, "left") - startDistance
-        print(f"Count: {encoderCount}\t Distance: {encoderDistance - startDistance}")
-        if encoderDistance <= (distance + 50):
+        print(f"Encoder distance: {encoderDistance}")
+        print(f"Count: {encoderCount}\t Distance: {encoderDistance}")
+        if encoderDistance >= (distance):
             brake()
             return
         robot.sleep(0.1)
