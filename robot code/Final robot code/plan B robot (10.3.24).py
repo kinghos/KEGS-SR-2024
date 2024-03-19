@@ -59,6 +59,7 @@ def getEncoderCount(motor):
 
 def calculateDistance(encoderCount, motor=None):
     distance = (encoderCount / CPR) * pi * WHEEL_DIAMETER # Distance in mm
+    print(f"Motor: {motor:<4}\t Count: {str(encoderCount):<10}\t Distance: {str(distance/1000):<10.4f}m")
     return distance
 
 
@@ -152,18 +153,6 @@ def markerApproach(targetid, distance, threshold=0.1):
         turnSee(target_marker.id, False, threshold)
     brake()
 
-def encoderDrive(distance):
-    startTime = robot.time()
-    startDistance = getEncoderCount("left")
-    while robot.time() - startTime < TIMEOUT:
-        drive()
-        encoderCount = getEncoderCount("left")
-        encoderDistance = calculateDistance(encoderCount, "left") - startDistance
-        print(f"Count: {encoderCount}\t Distance: {encoderDistance - startDistance}")
-        if encoderDistance <= (distance + 50):
-            brake()
-            return
-        robot.sleep(0.1)
 
 def main():
     print("START")
@@ -181,7 +170,9 @@ def main():
     if markerApproach(asteroid.id, 700) == -1:
         main()
         return
-    encoderDrive(700)
+    drive()
+    robot.sleep(1.5)
+    brake()
     robot.sleep(WAIT)
     mtrs[0].power = 0.3
     robot.sleep(0.5)
