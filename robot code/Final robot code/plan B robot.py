@@ -14,17 +14,12 @@ uno = robot.arduino
 
 CPR = 2 * pi * 1000/ (4*11 * 0.229) # Magic functioning as of 19.03.24
 WHEEL_DIAMETER = 80
-
 ASTEROID_IDS = [i for i in range(150, 200)]
-BASE_IDS = [i for i in range(robot.zone * 7, (robot.zone + 1) * 7)]
-NUMBER_OF_WALL_MARKERS = 28
-EGG_ID = 110
-PORT_ID = robot.zone + 120
-STARBOARD_ID = robot.zone + 125
+BASE_IDS = [i for i in range(8)]
 
-TURNSPEED = 0.18
-DRIVESPEED = 0.3
-WAIT = 0.25
+TURNSPEED = 0.12
+DRIVESPEED = 0.25
+WAIT = 0.2
 
 TIMEOUT = 40
 
@@ -36,11 +31,11 @@ def brake():
 '''Speed level of 0 means default speed, and levels above that are added'''
 def turn(clockwise=True, speed_level=0):
     if clockwise: 
-        mtrs[0].power = (TURNSPEED+speed_level)
-        mtrs[1].power = -(2*TURNSPEED+speed_level)
+        mtrs[0].power = -(TURNSPEED+speed_level)%1
+        mtrs[1].power = (2*(TURNSPEED+speed_level))%1
     else:
-        mtrs[0].power = -(2*TURNSPEED+speed_level)
-        mtrs[1].power = (TURNSPEED+speed_level)
+        mtrs[0].power = (2*(TURNSPEED+speed_level))%1
+        mtrs[1].power = -(TURNSPEED+speed_level)%1
 
 def drive(speed_level=0):
     mtrs[0].power = DRIVESPEED+speed_level
@@ -88,7 +83,7 @@ def closestMarker(clockwise_turn, type):
     while len(markers) == 0 and robot.time() - startTime < TIMEOUT:
         markers = [marker for marker in robot.camera.see() if marker.id in type]
         turn(clockwise_turn)
-        robot.sleep(2*WAIT)
+        robot.sleep(3*WAIT)
         brake()
         robot.sleep(WAIT)
 
@@ -203,18 +198,21 @@ def release():
     mech_board[0].power = -0.6
     robot.sleep(0.6)
     mech_board[0].power = 0
+    turn(False)
+    robot.sleep(1.5*WAIT)
     reverse()
-    robot.sleep(1)
+    robot.sleep(2)
     mech_board[0].power = 0.6
-    robot.sleep(0.6)
+    turn(False, 0.4)
+    robot.sleep(0.8)
     mech_board[0].power = 0
     return
 
 def eggChecker():
-    if findTarget(EGG_ID) != None and any([findTarget(base_id) for base_id in BASE_IDS]):
+    if findTarget(110) != None and any([findTarget(base_id) for base_id in BASE_IDS]):
         print("I see the egg and a base id at the same time!!!!!")
-        turnSee(EGG_ID, False, 0.05)
-        markerApproach(EGG_ID, 700)
+        turnSee(110, False, 0.05)
+        markerApproach(110, 700)
         encoderDrive(700)
         print("I have got the egg") #FIXME: ADD EGGMOVING CODE TO MOVE TO ANOTHER BASE
         print("eggchecker returning")
@@ -227,6 +225,7 @@ def main():
         helpICantSee()
         asteroid = closestMarker(True, ASTEROID_IDS)
     robot.sleep(WAIT)
+    ASTEROID_IDS.remove(asteroid.id)
     if turnSee(asteroid.id, False, 0.05) == -1:
         main()
         return
@@ -249,14 +248,11 @@ def main():
     while markerApproach(base.id, 1500, 0.3) == -1:
         markerApproach(base.id, 1500, 0.3)
     drive()
-    robot.sleep(2)
+    robot.sleep(3)
     brake()
     robot.sleep(WAIT)
 
     release()
-
-    reverse()
-    robot.sleep(2)
 
 while True:
     main()
