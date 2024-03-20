@@ -1,6 +1,10 @@
 """
     Current robot code for plan B+
     Last tested: 20.03.24 afterschool
+    Untested stuff:
+     - All contingencies
+     - Egg functions
+     - Check how motor current behaves - would help if the robot is stuck on raised platform
     TODO:
      - Add checking for if we have done a full revolution without seeing target marker for closestMarker and turnSee
      - Add closestMarker stuff from simulation (turn to see the opposite left and right markers before making the choice as to which asteroid is closest)
@@ -11,7 +15,7 @@ from math import pi
 from random import randint
 
 robot = Robot()
-mtrs = robot.motor_boards["SR0UK1L"].motors
+mtrs = robot.motor_boards["SR0UK1L"].motors # driving motors
 mech_board = robot.motor_boards["SR0KJ15"].motors
 uno = robot.arduino
 
@@ -192,7 +196,7 @@ def markerApproach(targetid, distance, threshold=0.1):
 def encoderDrive(distance):
     """Drive a set distance using encoders"""
     print("encoderDrive")
-    TIMEOUT = 8
+    TIMEOUT = 6
     startTime = robot.time()
     startDistance = calculateDistance(getEncoderCount("left"))
     prevDistance = startDistance
@@ -228,7 +232,7 @@ def helpICantSee():
 
 def helpImStuck():
     """Aggressively turn every motor we have randomly"""
-    match randint(0,3):
+    match randint(0,4):
         case 0:
             reverse(1)
         case 1: 
@@ -270,6 +274,7 @@ def eggChecker():
             print("EGG IS IN OUR BASE!")
             return True
     return False
+
 
 def eggApproach():
     """Approaches the egg. Returns -1 if timeout"""
@@ -342,6 +347,9 @@ def eggMover():
     
     return
 
+
+
+
 def main():
     print("START")
 
@@ -379,11 +387,14 @@ def main():
     brake()
     robot.sleep(WAIT)
 
+    # Everything below here needs to be tested again
     release()
 
     if eggChecker():
-        eggApproach()
-        eggMover()
+        if eggApproach() == -1:
+            main() # get it next iteration
+        if eggMover() == -1:
+            main() # get it next iteration
 
     ASTEROID_IDS.remove(asteroid.id)
     iteration_no += 1
