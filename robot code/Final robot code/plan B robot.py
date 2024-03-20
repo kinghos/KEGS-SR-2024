@@ -9,6 +9,7 @@ from random import randint
 
 robot = Robot()
 mtrs = robot.motor_boards["SR0UK1L"].motors
+mech_board = robot.motor_boards["SR0KJ15"].motors
 uno = robot.arduino
 
 CPR = 2 * pi * 1000/ (4*11 * 0.229) # Magic functioning as of 19.03.24
@@ -194,6 +195,14 @@ def helpImStuck():
     return
 
 def release():
+    mech_board[0].power = -0.6
+    robot.sleep(0.6)
+    mech_board[0].power = 0
+    reverse()
+    robot.sleep(1)
+    mech_board[0].power = 0.6
+    robot.sleep(0.6)
+    mech_board[0].power = 0
     return
 
 def eggChecker():
