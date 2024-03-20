@@ -1,6 +1,9 @@
 """
     Current robot code for plan B+
     Last tested: 20.03.24 afterschool
+    TODO:
+     - Add checking for if we have done a full revolution without seeing target marker for closestMarker and turnSee
+     - Add closestMarker stuff from simulation (turn to see the opposite left and right markers before making the choice as to which asteroid is closest)
 """
 
 from sr.robot3 import *
@@ -11,6 +14,8 @@ robot = Robot()
 mtrs = robot.motor_boards["SR0UK1L"].motors
 mech_board = robot.motor_boards["SR0KJ15"].motors
 uno = robot.arduino
+
+iteration_no = 0 # number of iterations of main while loop
 
 CPR = 2 * pi * 1000/ (4*11 * 0.229) # Magic functioning as of 19.03.24
 WHEEL_DIAMETER = 80
@@ -75,7 +80,7 @@ def findTarget(targetid):
     for marker in markers:
         if marker.id == targetid:
             return marker
-    print(f"Look couldn't find {targetid}")
+    print(f"findTarget couldn't find {targetid}")
     return None
 
 
@@ -249,23 +254,93 @@ def release():
     reverse()
     robot.sleep(2)
     mech_board[0].power = 0.6
-    turn(False, 0.4)
     robot.sleep(0.6)
     mech_board[0].power = 0
     return
 
 
 def eggChecker():
-    if findTarget(EGG_ID) != None and any([findTarget(base_id) for base_id in BASE_IDS]):
-        print("I see the egg and a base id at the same time!!!!!")
-        turnSee(EGG_ID, False, 0.05)
-        markerApproach(EGG_ID, 700)
-        encoderDrive(700)
-        print("I have got the egg") #FIXME: ADD EGGMOVING CODE TO MOVE TO ANOTHER BASE
-        print("eggchecker returning")
+    while len([marker for marker in robot.camera.see() if marker.id in ASTEROID_IDS]) == 0 and \
+            len([marker for marker in robot.camera.see() if marker.id in BASE_IDS]) > 0:
+        turn(bool(iteration_no % 2), 0.4) # the direction in which it turns alternates each time to allow for checking if the egg is in our base
+        robot.sleep(WAIT)
+        brake()
+        robot.sleep(WAIT)
+        if findTarget(EGG_ID):
+            print("EGG IS IN OUR BASE!")
+            return True
+    return False
+
+def eggApproach():
+    """Approaches the egg. Returns -1 if timeout"""
+    TIMEOUT = 10
+    startTime = robot.time()
+    while turnSee(EGG_ID, not bool(iteration_no % 2), 0.05) == -1:
+        helpICantSee()
+        if robot.time() - startTime < TIMEOUT:
+            print("Timeout on turnSee for egg")
+            return -1
+    while markerApproach(EGG_ID, 700) == -1 and robot.time() - startTime < TIMEOUT:
+        helpICantSee()
+        if robot.time() - startTime < TIMEOUT:
+            print("Timeout on turnSee for egg")
+            return -1
+    encoderDrive(700)
 
 
+def eggMover():
+    """
+    Moves egg to either of the two adjacent opponents' arenas.
+    Returns -1 for timeout
+    """
+    TIMEOUT = 20
+    startTime = robot.time()
+    while len(seen_opponent_markers) > 0:
+        ADJACENT_OPPONENT_IDS = [i for i in range(((robot.zone + 1) % 4) * 7, ((robot.zone + 2) % 4) * 7)] + \
+            [i for i in range(((robot.zone + 3) % 4) * 7, robot.zone * 7)]
+        seen_opponent_markers = [marker for marker in robot.camera.see() if marker.id in ADJACENT_OPPONENT_IDS]
+        turn()
+        robot.sleep(WAIT)
+        brake()
+        robot.sleep(WAIT)
+        if robot.time() - startTime < TIMEOUT:
+            return -1
 
+    opponent_markers = sorted(seen_opponent_markers, key=lambda marker: marker.distance)
+    chosen_opponent_marker = opponent_markers[0]
+    
+    while turnSee(chosen_opponent_marker) == -1:
+        seen_opponent_markers = [marker for marker in robot.camera.see() if marker.id in ADJACENT_OPPONENT_IDS]
+        while len(seen_opponent_markers) == 0:
+            helpICantSee()
+            seen_opponent_markers = [marker for marker in robot.camera.see() if marker.id in ADJACENT_OPPONENT_IDS]
+            if robot.time() - startTime < TIMEOUT:
+                return -1
+        opponent_markers = sorted(seen_opponent_markers, key=lambda marker: marker.distance)
+        chosen_opponent_marker = opponent_markers[0]
+        if robot.time() - startTime < TIMEOUT:
+            return -1
+    
+    while markerApproach(chosen_opponent_marker) == -1:
+        seen_opponent_markers = [marker for marker in robot.camera.see() if marker.id in ADJACENT_OPPONENT_IDS]
+        while len(seen_opponent_markers) == 0:
+            helpICantSee()
+            seen_opponent_markers = [marker for marker in robot.camera.see() if marker.id in ADJACENT_OPPONENT_IDS]
+            if robot.time() - startTime < TIMEOUT:
+                return -1
+        opponent_markers = sorted(seen_opponent_markers, key=lambda marker: marker.distance)
+        chosen_opponent_marker = opponent_markers[0]
+        if robot.time() - startTime < TIMEOUT:
+            return -1
+
+    drive()
+    robot.sleep(3)
+    brake()
+    robot.sleep(WAIT)
+
+    release()
+    
+    return
 
 def main():
     print("START")
@@ -292,20 +367,29 @@ def main():
     base = closestMarker(True, BASE_IDS)
     while base == None:
         helpICantSee()
-        asteroid = closestMarker(True, BASE_IDS)
-    if turnSee(base.id, False, 0.2) == -1:
-        main()
-        return
+        base = closestMarker(True, BASE_IDS)
+    while turnSee(base.id, False, 0.2) == -1:
+        helpICantSee()
+        base = closestMarker(True, BASE_IDS)
     while markerApproach(base.id, 1500, 0.3) == -1:
         helpICantSee()
-        markerApproach(base.id, 1500, 0.3)
+        base = closestMarker(True, BASE_IDS)
     drive()
     robot.sleep(3)
     brake()
     robot.sleep(WAIT)
 
     release()
-    ASTEROID_IDS.remove(asteroid.id)
 
+    if eggChecker():
+        eggApproach()
+        eggMover()
+
+    ASTEROID_IDS.remove(asteroid.id)
+    iteration_no += 1
+
+
+
+print(robot.zone)
 while True:
     main()
