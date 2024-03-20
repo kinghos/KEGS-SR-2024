@@ -13,8 +13,13 @@ uno = robot.arduino
 
 CPR = 2 * pi * 1000/ (4*11 * 0.229) # Magic functioning as of 19.03.24
 WHEEL_DIAMETER = 80
+
 ASTEROID_IDS = [i for i in range(150, 200)]
-BASE_IDS = [i for i in range(8)]
+BASE_IDS = [i for i in range(robot.zone * 7, (robot.zone + 1) * 7)]
+NUMBER_OF_WALL_MARKERS = 28
+EGG_ID = 110
+PORT_ID = robot.zone + 120
+STARBOARD_ID = robot.zone + 125
 
 TURNSPEED = 0.18
 DRIVESPEED = 0.3
@@ -197,10 +202,10 @@ def release():
     return
 
 def eggChecker():
-    if findTarget(110) != None and any([findTarget(base_id) for base_id in BASE_IDS]):
+    if findTarget(EGG_ID) != None and any([findTarget(base_id) for base_id in BASE_IDS]):
         print("I see the egg and a base id at the same time!!!!!")
-        turnSee(110, False, 0.05)
-        markerApproach(110, 700)
+        turnSee(EGG_ID, False, 0.05)
+        markerApproach(EGG_ID, 700)
         encoderDrive(700)
         print("I have got the egg") #FIXME: ADD EGGMOVING CODE TO MOVE TO ANOTHER BASE
         print("eggchecker returning")
