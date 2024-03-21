@@ -8,8 +8,7 @@
     TODO:
      - Add checking for if we have done a full revolution without seeing target marker for closestMarker and turnSee
      - Add closestMarker stuff from simulation (turn to see the opposite left and right markers before making the choice as to which asteroid is closest)
-     - FIXME: encoder & microswitch trouble
-"""
+     """
 
 from sr.robot3 import *
 from math import pi
@@ -61,7 +60,7 @@ def reverse(speed_level=0):
     mtrs[1].power = -(DRIVESPEED+speed_level)
 
 
-def getEncoderCount(motor): #FIXME
+def getEncoderCount(motor):
     if motor == "left":
         motor = 0
     else:
@@ -93,7 +92,7 @@ def findTarget(targetid):
     return None
 
 
-def closestMarker(clockwise_turn, type):
+def closestMarker(clockwise_turn, markerType):
     '''
     Returns the first marker it sees whilst turning
     Returns None if not found / timeout
@@ -102,20 +101,28 @@ def closestMarker(clockwise_turn, type):
     markers = []
     startTime = robot.time()
     TIMEOUT = 25
+    closest = None
 
-    while len(markers) == 0 and robot.time() - startTime < TIMEOUT:
-        markers = [marker for marker in robot.camera.see() if marker.id in type]
+    # while len(markers) == 0 and robot.time() - startTime < TIMEOUT:
+    #     markers = [marker for marker in robot.camera.see() if marker.id in markerType]
+    #     turn(clockwise_turn)
+    #     robot.sleep(2.5*WAIT)
+    #     brake()
+    #     robot.sleep(WAIT)
+    
+    for i in range(4):
+        markers = [marker for marker in robot.camera.see() if marker.id in markerType]
+        if markers:
+            for marker in markers:
+                if closest == None:
+                    closest = marker
+                if marker.position.distance < closest.position.distance:
+                    closest = marker
         turn(clockwise_turn)
         robot.sleep(2.5*WAIT)
         brake()
         robot.sleep(WAIT)
 
-    closest = None
-    for marker in markers:
-        if closest == None:
-            closest = marker
-        if marker.position.distance < closest.position.distance:
-            closest = marker
     print(closest)
     brake()
     return closest
