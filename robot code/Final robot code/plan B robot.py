@@ -237,6 +237,7 @@ def encoderMicroswitchDrive(distance):
         encoderCount = getEncoderCount("left")
         encoderDistance = calculateDistance(encoderCount, "left") - startDistance
         print(f"Encoder Count: {encoderCount}\t Distance: {encoderDistance}")
+
         if encoderDistance >= 0.7*distance and (prevMicroswitchState > 3):
             print("Reached distance AND microswitch pressed")
             brake()
@@ -244,7 +245,7 @@ def encoderMicroswitchDrive(distance):
         #if encoderDistance - prevDistance < 5:
         #    print("We are stuck against a wall, but wheels still touch the ground")
         #    helpICantSee()
-        robot.sleep(0.1)
+        robot.sleep(WAIT)
         prevDistance = encoderDistance
         if microswitch():
             prevMicroswitchState += 1
@@ -329,7 +330,7 @@ def eggApproach():
         if robot.time() - startTime < TIMEOUT:
             print("Timeout on turnSee for egg")
             return -1
-    encoderDrive(700)
+    encoderMicroswitchDrive(700)
 
 
 def eggMover():
