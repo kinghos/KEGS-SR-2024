@@ -69,22 +69,19 @@ def getEncoderCount(motor): #FIXME
     while True:
         robot.sleep(0.05)
         sensorInfo = uno.command(command)
-        strEncoderCount = sensorInfo[0]
-        try:
-            if strEncoderCount: # Checks for non-empty string
-                encoderCount = float(strEncoderCount)
-                return encoderCount
-        except ValueError:
-            print("Got a weird letter", strEncoderCount)
+        if sensorInfo:
+            sensorInfo = sensorInfo.split(",")[0]
+            return int(sensorInfo)
     
 
 def calculateDistance(encoderCount, motor=None):
     distance = (encoderCount / CPR) * pi * WHEEL_DIAMETER # Distance in mm
     return distance
 
-def microswitch(): #FIXME
-    print("Microswitch:", not robot.arduino.pins[7].digital_read())
-    return not robot.arduino.pins[7].digital_read()
+def microswitch(): 
+    microswitchState = uno.command("e")
+    microswitchState = bool(microswitchState.split(",")[1])
+    return microswitchState
 
 def findTarget(targetid):
     '''Identify a marker based on its ID. Return the marker object if found, else return None.'''
