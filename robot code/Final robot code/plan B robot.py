@@ -63,14 +63,14 @@ def reverse(speed_level=0):
 
 def getEncoderCount(motor): #FIXME
     if motor == "left":
-        command = "e"
+        motor = 0
     else:
-        command = "f"
+        motor = 1
     while True:
         robot.sleep(0.05)
-        sensorInfo = uno.command(command)
+        sensorInfo = uno.command("e")
         if sensorInfo:
-            sensorInfo = sensorInfo.split(",")[0]
+            sensorInfo = sensorInfo.split(",")[motor]
             return int(sensorInfo)
     
 
@@ -80,7 +80,7 @@ def calculateDistance(encoderCount, motor=None):
 
 def microswitch(): 
     microswitchState = uno.command("e")
-    microswitchState = bool(microswitchState.split(",")[1])
+    microswitchState = bool(microswitchState.split(",")[2])
     return microswitchState
 
 def findTarget(targetid):
