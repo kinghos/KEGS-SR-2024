@@ -179,15 +179,22 @@ def markerApproach(targetid, distance, threshold=0.1):
         return -1
     
     prevDistance = calculateDistance(getEncoderCount("left"))
+    notMoving = 0
     while target_marker.position.distance > distance:
         print("Driving")
         drive(0.2)
         robot.sleep(WAIT)
         print(f"Motor currents/A: {mtrs[0].current}; {mtrs[1].current}")
         currDistance = calculateDistance(getEncoderCount("left"))
-        if currDistance - prevDistance < 10: #if we haven't moved more than 20mm since last repetition of while loop
-            print("We are stuck against a wall, but wheels still touch the ground")
-            helpICantSee()
+            
+        if currDistance - prevDistance < 20:
+            notMoving += 1
+            if notMoving > 4:
+                print("We are stuck against a wall, but wheels still touch the ground")
+                helpICantSee()
+        else:
+            notMoving = 0
+
         #elif motorcurrents dropped v rapidly:
         #    print("Motors are in the air!")
         #    helpImStuck()
@@ -211,6 +218,7 @@ def encoderMicroswitchDrive(distance, useMicroswitch=False):
     prevDistance = 0
     print("start: ", startDistance)
     prevMicroswitchState = 0
+    notMoving = 0
     while robot.time() - startTime < TIMEOUT or encoderDistance > 2*distance:
         drive()
         encoderCount = getEncoderCount("left") #FIXME: adjust for microswitch
@@ -226,9 +234,15 @@ def encoderMicroswitchDrive(distance, useMicroswitch=False):
             if encoderDistance >= (distance):
                 brake()
                 return
-        #if encoderDistance - prevDistance < 5:
-        #    print("We are stuck against a wall, but wheels still touch the ground")
-        #    helpICantSee()
+            
+        if encoderDistance - prevDistance < 20:
+            notMoving += 1
+            if notMoving > 4:
+                print("We are stuck against a wall, but wheels still touch the ground")
+                helpICantSee()
+        else:
+            notMoving = 0
+
         robot.sleep(WAIT)
         prevDistance = encoderDistance
         if microswitch():
