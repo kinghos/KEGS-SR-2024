@@ -299,8 +299,13 @@ def release():
 
 
 def eggChecker():
+    print("eggChecker")
+    NEAR_ADJACENT_OPPONENT_IDS = [i for i in range(((robot.zone + 1) % 4) * 7, ((robot.zone + 1) % 4) * 7 + 3)] + \
+            [i for i in range(((robot.zone + 3) % 4) * 7, ((robot.zone + 3) % 4) * 7 + 3)]
+    # while we don't see asteroids or the far half of the adjacent opponents' bases
     while len([marker for marker in robot.camera.see() if marker.id in ASTEROID_IDS]) == 0 and \
-            len([marker for marker in robot.camera.see() if marker.id in BASE_IDS]) > 0:
+            len([marker for marker in robot.camera.see() if marker.id in NEAR_ADJACENT_OPPONENT_IDS]) == 0:
+        print("scanning for egg")
         turn(bool(iteration_no % 2), 0.4) # the direction in which it turns alternates each time to allow for checking if the egg is in our base
         robot.sleep(WAIT)
         brake()
