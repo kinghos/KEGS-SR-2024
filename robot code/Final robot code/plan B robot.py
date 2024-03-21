@@ -74,7 +74,7 @@ def getEncoderCount(motor): #FIXME
             return int(sensorInfo)
     
 
-def calculateDistance(encoderCount, motor=None):
+def calculateDistance(encoderCount):
     distance = (encoderCount / CPR) * pi * WHEEL_DIAMETER # Distance in mm
     return distance
 
@@ -210,29 +210,40 @@ def encoderMicroswitchDrive(distance, useMicroswitch=False):
     """Drive a set distance using encoders"""
     print("encoderDrive")
     TIMEOUT = 5
+    TOLERANCE = 20 # count no. for which the motors are considered out of sync
+    REVERSEPOWER = 0.01 # amount by which drive speed is reduced to adjust motors
     startTime = robot.time()
-    startDistance = calculateDistance(getEncoderCount("left")) #FIXME: adjust for microswitch
+    startDistance = calculateDistance(getEncoderCount("left")) 
     prevDistance = 0
     print("start: ", startDistance)
     prevMicroswitchState = 0
     notMoving = 0
-    while robot.time() - startTime < TIMEOUT or encoderDistance > 2*distance:
-        drive()
-        encoderCount = getEncoderCount("left") #FIXME: adjust for microswitch
-        encoderDistance = calculateDistance(encoderCount, "left") - startDistance #FIXME: adjust for microswitch
-        print(f"Encoder Count: {encoderCount}\t Distance: {encoderDistance}")
+    drive()
+    while robot.time() - startTime < TIMEOUT or leftEncoderDistance > 2*distance:
+        leftEncoderCount = getEncoderCount("left") 
+        leftEncoderDistance = calculateDistance(leftEncoderCount) - startDistance 
+        rightEncoderCount = getEncoderCount("right")
+        rightEncoderDistance = calculateDistance(rightEncoderCount) - startDistance
+
+        print(f"Left Encoder Count: {leftEncoderCount}\t Distance: {leftEncoderDistance}")
+        print(f"Right Encoder Count: {rightEncoderCount}\t Distance: {rightEncoderDistance}")
+        
+        if leftEncoderCount > rightEncoderCount + TOLERANCE:
+            mtrs[0].power -= REVERSEPOWER
+        elif rightEncoderCount > leftEncoderCount + TOLERANCE:
+            mtrs[1].power -= REVERSEPOWER
 
         if useMicroswitch:
-            if encoderDistance >= 0.7*distance and (prevMicroswitchState > 3): # if microswitch has been pressed for 3 consecutive iterations
+            if leftEncoderDistance >= 0.7 * distance and (prevMicroswitchState > 3): # if microswitch has been pressed for 3 consecutive iterations
                 print("Reached distance AND microswitch pressed")
                 brake()
                 return
         else:
-            if encoderDistance >= (distance):
+            if leftEncoderDistance >= (distance):
                 brake()
                 return
             
-        if encoderDistance - prevDistance < 20:
+        if leftEncoderDistance - prevDistance < 20:
             notMoving += 1
             if notMoving > 4:
                 print("We are stuck against a wall, but wheels still touch the ground")
@@ -241,7 +252,7 @@ def encoderMicroswitchDrive(distance, useMicroswitch=False):
             notMoving = 0
 
         robot.sleep(WAIT)
-        prevDistance = encoderDistance
+        prevDistance = leftEncoderDistance
         if microswitch():
             prevMicroswitchState += 1
         else:
