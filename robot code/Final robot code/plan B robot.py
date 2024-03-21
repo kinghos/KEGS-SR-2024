@@ -18,6 +18,7 @@ robot = Robot()
 mtrs = robot.motor_boards["SR0UK1L"].motors # driving motors
 mech_board = robot.motor_boards["SR0KJ15"].motors
 uno = robot.arduino
+robot.arduino.pins[7].mode = INPUT_PULLUP
 
 iteration_no = 0 # number of iterations of main while loop
 
@@ -31,7 +32,7 @@ EGG_ID = 110
 PORT_ID = robot.zone + 120
 STARBOARD_ID = robot.zone + 125
 
-TURNSPEED = 0.12
+TURNSPEED = 0.15
 DRIVESPEED = 0.25
 WAIT = 0.2
 
@@ -68,15 +69,21 @@ def getEncoderCount(motor):
     while True:
         robot.sleep(0.05)
         strEncoderCount = uno.command(command)
-        if strEncoderCount: # Checks for non-empty string
-            encoderCount = float(strEncoderCount)
-            return encoderCount
+        try:
+            if strEncoderCount: # Checks for non-empty string
+                encoderCount = float(strEncoderCount)
+                return encoderCount
+        except ValueError:
+            print("Got a weird letter", strEncoderCount)
     
 
 def calculateDistance(encoderCount, motor=None):
     distance = (encoderCount / CPR) * pi * WHEEL_DIAMETER # Distance in mm
     return distance
 
+def microswitch():
+    print("Microswitch:", not robot.arduino.pins[7].digital_read())
+    return not robot.arduino.pins[7].digital_read()
 
 def findTarget(targetid):
     '''Identify a marker based on its ID. Return the marker object if found, else return None.'''
@@ -96,12 +103,12 @@ def closestMarker(clockwise_turn, type):
     print("closestMarker")
     markers = []
     startTime = robot.time()
-    TIMEOUT = 12
+    TIMEOUT = 25
 
     while len(markers) == 0 and robot.time() - startTime < TIMEOUT:
         markers = [marker for marker in robot.camera.see() if marker.id in type]
         turn(clockwise_turn)
-        robot.sleep(3*WAIT)
+        robot.sleep(2.5*WAIT)
         brake()
         robot.sleep(WAIT)
 
@@ -135,7 +142,7 @@ def turnSee(targetid, clockwise_turn, threshold):
         robot.sleep(WAIT)
         target_marker = findTarget(targetid)
         print(target_marker)
-        if robot.time() - startTime < TIMEOUT:
+        if robot.time() - startTime > TIMEOUT:
             print("turnSee timed out")
             return -1
         
@@ -149,11 +156,11 @@ def turnSee(targetid, clockwise_turn, threshold):
         if target_marker.position.horizontal_angle > 2.5*threshold:
             turn(True, 0.2)
         elif target_marker.position.horizontal_angle < -threshold:
-            turn(False)
+            turn(False, -0.04)
         elif target_marker.position.horizontal_angle > threshold:
-            turn(True)
+            turn(True, -0.04)
         print(target_marker.position.horizontal_angle)
-        robot.sleep(0.9*WAIT)
+        robot.sleep(WAIT)
         brake()
         robot.sleep(WAIT)
     print(f"Found marker, {target_marker}")
@@ -177,7 +184,7 @@ def markerApproach(targetid, distance, threshold=0.1):
         robot.sleep(WAIT)
         print(f"Motor currents/A: {mtrs[0].current}; {mtrs[1].current}")
         currDistance = calculateDistance(getEncoderCount("left"))
-        if currDistance - prevDistance < 20: #if we haven't moved more than 20mm since last repetition of while loop
+        if currDistance - prevDistance < 10: #if we haven't moved more than 20mm since last repetition of while loop
             print("We are stuck against a wall, but wheels still touch the ground")
             helpICantSee()
         #elif motorcurrents dropped v rapidly:
@@ -199,7 +206,7 @@ def encoderDrive(distance):
     TIMEOUT = 6
     startTime = robot.time()
     startDistance = calculateDistance(getEncoderCount("left"))
-    prevDistance = startDistance
+    prevDistance = 0
     print("start: ", startDistance)
     while robot.time() - startTime < TIMEOUT:
         drive()
@@ -209,41 +216,73 @@ def encoderDrive(distance):
         if encoderDistance >= (distance):
             brake()
             return
-        if encoderDistance - prevDistance < 20:
-            print("We are stuck against a wall, but wheels still touch the ground")
-            helpICantSee()
+        #if encoderDistance - prevDistance < 5:
+        #    print("We are stuck against a wall, but wheels still touch the ground")
+        #    helpICantSee()
         robot.sleep(0.1)
         prevDistance = encoderDistance
 
 
+def encoderMicroswitchDrive(distance):
+    """Drive a set distance using encoders"""
+    print("encoderDrive")
+    TIMEOUT = 5
+    startTime = robot.time()
+    startDistance = calculateDistance(getEncoderCount("left"))
+    prevDistance = 0
+    print("start: ", startDistance)
+    prevMicroswitchState = 0
+    while robot.time() - startTime < TIMEOUT or encoderDistance > 2*distance:
+        drive()
+        encoderCount = getEncoderCount("left")
+        encoderDistance = calculateDistance(encoderCount, "left") - startDistance
+        print(f"Encoder Count: {encoderCount}\t Distance: {encoderDistance}")
+        if encoderDistance >= 0.7*distance and (prevMicroswitchState > 3):
+            print("Reached distance AND microswitch pressed")
+            brake()
+            return
+        #if encoderDistance - prevDistance < 5:
+        #    print("We are stuck against a wall, but wheels still touch the ground")
+        #    helpICantSee()
+        robot.sleep(0.1)
+        prevDistance = encoderDistance
+        if microswitch():
+            prevMicroswitchState += 1
+        else:
+            prevMicroswitchState = 0
+
+
+
 def helpICantSee():
     """Move us into a better position for seeing"""
+    print("cant see help")
     match randint(0,2):
         case 0:
             reverse()
         case 1: 
-            turn(True, 0.5)
+            turn(True, 0.15)
         case 2:
-            drive(0.5)
-    robot.sleep(2)
+            drive(0.4)
+    robot.sleep(1)
     brake()
     robot.sleep(WAIT)
 
 
 def helpImStuck():
     """Aggressively turn every motor we have randomly"""
+    print("stuck")
     match randint(0,4):
         case 0:
             reverse(1)
         case 1: 
             drive(1)
         case 2:
-            turn(True, 1)
+            turn(True, 0.2)
         case 3:
             mech_board[0].power = 1
         case 4:
             mech_board[0].power = -1
-    robot.sleep(2)
+    robot.sleep(1)
     brake()
     mech_board[0].power = 0
     robot.sleep(WAIT)
@@ -258,7 +297,7 @@ def release():
     reverse()
     robot.sleep(2)
     mech_board[0].power = 0.6
-    robot.sleep(0.6)
+    robot.sleep(0.47)
     mech_board[0].power = 0
     return
 
@@ -366,7 +405,8 @@ def main():
         main()
         return
     
-    encoderDrive(700)
+    #encoderDrive(700)
+    encoderMicroswitchDrive(700)
     robot.sleep(WAIT)
     mtrs[0].power = 0.3
     robot.sleep(0.5)
@@ -397,6 +437,7 @@ def main():
             main() # get it next iteration
 
     ASTEROID_IDS.remove(asteroid.id)
+    global iteration_no
     iteration_no += 1
 
 
