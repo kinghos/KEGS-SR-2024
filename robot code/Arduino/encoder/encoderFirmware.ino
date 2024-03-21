@@ -16,7 +16,7 @@ void setup()
   Serial.begin(SERIAL_BAUD);
   pinMode(ENCODER_PIN_A, INPUT);
   pinMode(ENCODER_PIN_B, INPUT);
-  pinMode(MICROSWITCH, INPUT_PULLUP);
+  pinMode(MICROSWITCH, INPUT);
 
   // Makes change on either pin trigger an interrupt
   attachInterrupt(digitalPinToInterrupt(ENCODER_PIN_A), encoderISR, CHANGE);
@@ -26,7 +26,8 @@ void setup()
 
 int read_pin()
 {
-  while (!Serial.available());
+  while (!Serial.available())
+    ;
   int pin = Serial.read();
   return (int)(pin - 'a');
 }
@@ -129,11 +130,9 @@ void encoderISR()
     encoderCount--;
 
   lastEncoded = encoded; // Store value for next iteration
-
 }
-
 
 void microswitch()
 {
-  microswitch_state = !digitalRead(MICROSWITCH);
+  microswitch_state = digitalRead(MICROSWITCH);
 }
