@@ -61,14 +61,15 @@ def reverse(speed_level=0):
     mtrs[1].power = -(DRIVESPEED+speed_level)
 
 
-def getEncoderCount(motor):
+def getEncoderCount(motor): #FIXME
     if motor == "left":
         command = "e"
     else:
         command = "f"
     while True:
         robot.sleep(0.05)
-        strEncoderCount = uno.command(command)
+        sensorInfo = uno.command(command)
+        strEncoderCount = sensorInfo[0]
         try:
             if strEncoderCount: # Checks for non-empty string
                 encoderCount = float(strEncoderCount)
@@ -81,7 +82,7 @@ def calculateDistance(encoderCount, motor=None):
     distance = (encoderCount / CPR) * pi * WHEEL_DIAMETER # Distance in mm
     return distance
 
-def microswitch():
+def microswitch(): #FIXME
     print("Microswitch:", not robot.arduino.pins[7].digital_read())
     return not robot.arduino.pins[7].digital_read()
 

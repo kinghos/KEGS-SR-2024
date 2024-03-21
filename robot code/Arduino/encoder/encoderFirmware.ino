@@ -6,6 +6,7 @@
 
 #define ENCODER_PIN_A 2
 #define ENCODER_PIN_B 3
+#define MICROSWITCH 7
 #define WHEEL_DIAMETER 80 // mm
 volatile long encoderCount = 0;
 int lastEncoded = 0;
@@ -19,6 +20,7 @@ void setup()
   // Makes change on either pin trigger an interrupt
   attachInterrupt(digitalPinToInterrupt(ENCODER_PIN_A), encoderISR, CHANGE);
   attachInterrupt(digitalPinToInterrupt(ENCODER_PIN_B), encoderISR, CHANGE);
+  attachInterrupt(digitalPinToInterrupt(MICROSWITCH), microswitch, CHANGE);
 }
 
 int read_pin()
@@ -99,7 +101,8 @@ void loop()
       break;
     // Custom firmware onwards
     case 'e':
-      Serial.println(encoderCount);
+      Serial.println(String(encoderCount) + ',' + String(buttonState ? "True" : "False"));
+      // Format: "<encoderCount>,<True/False>"
       break;
     default:
       // A problem here: we do not know how to handle the command!
@@ -128,3 +131,8 @@ void encoderISR()
 
 }
 
+
+void microswitch()
+{
+  microswitch_state = digitalRead(MICROSWITCH);
+}
