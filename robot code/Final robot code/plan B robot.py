@@ -8,6 +8,7 @@
     TODO:
      - Add checking for if we have done a full revolution without seeing target marker for closestMarker and turnSee
      - Add closestMarker stuff from simulation (turn to see the opposite left and right markers before making the choice as to which asteroid is closest)
+     - FIXME: encoder & microswitch trouble
 """
 
 from sr.robot3 import *
@@ -25,8 +26,7 @@ iteration_no = 0 # number of iterations of main while loop
 CPR = 2 * pi * 1000/ (4*11 * 0.229) # Magic functioning as of 19.03.24
 WHEEL_DIAMETER = 80
 ASTEROID_IDS = [i for i in range(150, 200)]
-BASE_IDS = [i for i in range(8)]
-# BASE_IDS = [i for i in range(robot.zone * 7, (robot.zone + 1) * 7)]
+BASE_IDS = [i for i in range(robot.zone * 7, (robot.zone + 1) * 7)] # To change zone click settings on robot.lan (defaults to 0)
 NUMBER_OF_WALL_MARKERS = 28
 EGG_ID = 110
 PORT_ID = robot.zone + 120
@@ -200,48 +200,31 @@ def markerApproach(targetid, distance, threshold=0.1):
     brake()
 
 
-def encoderDrive(distance):
-    """Drive a set distance using encoders"""
-    print("encoderDrive")
-    TIMEOUT = 6
-    startTime = robot.time()
-    startDistance = calculateDistance(getEncoderCount("left"))
-    prevDistance = 0
-    print("start: ", startDistance)
-    while robot.time() - startTime < TIMEOUT:
-        drive()
-        encoderCount = getEncoderCount("left")
-        encoderDistance = calculateDistance(encoderCount, "left") - startDistance
-        print(f"Encoder Count: {encoderCount}\t Distance: {encoderDistance}")
-        if encoderDistance >= (distance):
-            brake()
-            return
-        #if encoderDistance - prevDistance < 5:
-        #    print("We are stuck against a wall, but wheels still touch the ground")
-        #    helpICantSee()
-        robot.sleep(0.1)
-        prevDistance = encoderDistance
 
-
-def encoderMicroswitchDrive(distance):
+def encoderMicroswitchDrive(distance, useMicroswitch=False):
     """Drive a set distance using encoders"""
     print("encoderDrive")
     TIMEOUT = 5
     startTime = robot.time()
-    startDistance = calculateDistance(getEncoderCount("left"))
+    startDistance = calculateDistance(getEncoderCount("left")) #FIXME: adjust for microswitch
     prevDistance = 0
     print("start: ", startDistance)
     prevMicroswitchState = 0
     while robot.time() - startTime < TIMEOUT or encoderDistance > 2*distance:
         drive()
-        encoderCount = getEncoderCount("left")
-        encoderDistance = calculateDistance(encoderCount, "left") - startDistance
+        encoderCount = getEncoderCount("left") #FIXME: adjust for microswitch
+        encoderDistance = calculateDistance(encoderCount, "left") - startDistance #FIXME: adjust for microswitch
         print(f"Encoder Count: {encoderCount}\t Distance: {encoderDistance}")
 
-        if encoderDistance >= 0.7*distance and (prevMicroswitchState > 3):
-            print("Reached distance AND microswitch pressed")
-            brake()
-            return
+        if useMicroswitch:
+            if encoderDistance >= 0.7*distance and (prevMicroswitchState > 3): # if microswitch has been pressed for 3 consecutive iterations
+                print("Reached distance AND microswitch pressed")
+                brake()
+                return
+        else:
+            if encoderDistance >= (distance):
+                brake()
+                return
         #if encoderDistance - prevDistance < 5:
         #    print("We are stuck against a wall, but wheels still touch the ground")
         #    helpICantSee()
@@ -278,7 +261,7 @@ def helpImStuck():
         case 1: 
             drive(1)
         case 2:
-            turn(True, 0.2)
+            turn(True, 1)
         case 3:
             mech_board[0].power = 1
         case 4:
