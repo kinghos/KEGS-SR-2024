@@ -4,29 +4,38 @@
 #define SERIAL_BAUD 115200
 #define FW_VER 1
 
-#define ENCODER_PIN_A 2
-#define ENCODER_PIN_B 3
+#define ENCODER1_PIN_A 2
+#define ENCODER1_PIN_B 3
+#define ENCODER2_PIN_A 4
+#define ENCODER2_PIN_B 5
+
 #define MICROSWITCH 7
 #define WHEEL_DIAMETER 80 // mm
-volatile long encoderCount = 0;
-int lastEncoded = 0;
+volatile long encoderCountLeft = 0;
+volatile long encoderCountRight = 0;
+int lastEndcodedLeft = 0;
+int lastEndcodedRight = 0;
 
 void setup()
 {
   Serial.begin(SERIAL_BAUD);
-  pinMode(ENCODER_PIN_A, INPUT);
-  pinMode(ENCODER_PIN_B, INPUT);
-  pinMode(MICROSWITCH, INPUT_PULLUP);
+  pinMode(ENCODER1_PIN_A, INPUT);
+  pinMode(ENCODER1_PIN_B, INPUT);
+  pinMode(MICROSWITCH, INPUT);
 
   // Makes change on either pin trigger an interrupt
-  attachInterrupt(digitalPinToInterrupt(ENCODER_PIN_A), encoderISR, CHANGE);
-  attachInterrupt(digitalPinToInterrupt(ENCODER_PIN_B), encoderISR, CHANGE);
+  attachInterrupt(digitalPinToInterrupt(ENCODER1_PIN_A), encoderISR1, CHANGE);
+  attachInterrupt(digitalPinToInterrupt(ENCODER1_PIN_B), encoderISR1, CHANGE);
+  attachInterrupt(digitalPinToInterrupt(ENCODER2_PIN_A), encoderISR2, CHANGE);
+  attachInterrupt(digitalPinToInterrupt(ENCODER2_PIN_B), encoderISR2, CHANGE);
+
   attachInterrupt(digitalPinToInterrupt(MICROSWITCH), microswitch, CHANGE);
 }
 
 int read_pin()
 {
-  while (!Serial.available());
+  while (!Serial.available())
+    ;
   int pin = Serial.read();
   return (int)(pin - 'a');
 }
@@ -102,8 +111,8 @@ void loop()
       break;
     // Custom firmware onwards
     case 'e':
-      Serial.println(String(encoderCount) + ',' + String(buttonState ? "True" : "False"));
-      // Format: "<encoderCount>,<True/False>"
+      Serial.println(String(encoderCountLeft) + ',' + String(encoderCountRight) + "," + String(buttonState ? "True" : "False"));
+      // Format: "<encoderCountLeft>,<True/False>"
       break;
     default:
       // A problem here: we do not know how to handle the command!
@@ -114,26 +123,41 @@ void loop()
   }
 }
 
-void encoderISR()
+void encoderISR1()
 {
-  int phaseA = digitalRead(ENCODER_PIN_A);
-  int phaseB = digitalRead(ENCODER_PIN_B);
+  int phaseA = digitalRead(ENCODER1_PIN_A);
+  int phaseB = digitalRead(ENCODER1_PIN_B);
 
   int encoded = (phaseA << 1) | phaseB; // Combines the two values into one number with a bitwise shift and bitwise OR
 
-  int sum = (lastEncoded << 2) | encoded; // Adds the previous encoder value to the current value to determine direction
+  int sum = (lastEndcodedLeft << 2) | encoded; // Adds the previous encoder value to the current value to determine direction
 
   if (sum == 0b1101 || sum == 0b0100 || sum == 0b0010 || sum == 0b1011)
-    encoderCount++;
+    encoderCountLeft++;
   if (sum == 0b1110 || sum == 0b0111 || sum == 0b0001 || sum == 0b1000)
-    encoderCount--;
+    encoderCountLeft--;
 
-  lastEncoded = encoded; // Store value for next iteration
-
+  lastEndcodedLeft = encoded; // Store value for next iteration
 }
 
+void encoderISR2()
+{
+  int phaseA = digitalRead(ENCODER2_PIN_A);
+  int phaseB = digitalRead(ENCODER2_PIN_B);
+
+  int encoded = (phaseA << 1) | phaseB; // Combines the two values into one number with a bitwise shift and bitwise OR
+
+  int sum = (lastEndcodedRight << 2) | encoded; // Adds the previous encoder value to the current value to determine direction
+
+  if (sum == 0b1101 || sum == 0b0100 || sum == 0b0010 || sum == 0b1011)
+    encoderCountRight++;
+  if (sum == 0b1110 || sum == 0b0111 || sum == 0b0001 || sum == 0b1000)
+    encoderCountRight--;
+
+  lastEndcodedRight = encoded; // Store value for next iteration
+}
 
 void microswitch()
 {
-  microswitch_state = !digitalRead(MICROSWITCH);
+  microswitch_state = digitalRead(MICROSWITCH);
 }

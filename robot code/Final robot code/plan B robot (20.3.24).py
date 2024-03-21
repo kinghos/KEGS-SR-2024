@@ -1,14 +1,9 @@
 """
     Current robot code for plan B+
     Last tested: 20.03.24 afterschool
-    Untested stuff:
-     - All contingencies
-     - Egg functions
-     - Check how motor current behaves - would help if the robot is stuck on raised platform
     TODO:
      - Add checking for if we have done a full revolution without seeing target marker for closestMarker and turnSee
      - Add closestMarker stuff from simulation (turn to see the opposite left and right markers before making the choice as to which asteroid is closest)
-     - FIXME: encoder & microswitch trouble
 """
 
 from sr.robot3 import *
@@ -16,23 +11,23 @@ from math import pi
 from random import randint
 
 robot = Robot()
-mtrs = robot.motor_boards["SR0UK1L"].motors # driving motors
+mtrs = robot.motor_boards["SR0UK1L"].motors
 mech_board = robot.motor_boards["SR0KJ15"].motors
 uno = robot.arduino
-robot.arduino.pins[7].mode = INPUT_PULLUP
 
 iteration_no = 0 # number of iterations of main while loop
 
 CPR = 2 * pi * 1000/ (4*11 * 0.229) # Magic functioning as of 19.03.24
 WHEEL_DIAMETER = 80
 ASTEROID_IDS = [i for i in range(150, 200)]
-BASE_IDS = [i for i in range(robot.zone * 7, (robot.zone + 1) * 7)] # To change zone click settings on robot.lan (defaults to 0)
+BASE_IDS = [i for i in range(8)]
+# BASE_IDS = [i for i in range(robot.zone * 7, (robot.zone + 1) * 7)]
 NUMBER_OF_WALL_MARKERS = 28
 EGG_ID = 110
 PORT_ID = robot.zone + 120
 STARBOARD_ID = robot.zone + 125
 
-TURNSPEED = 0.15
+TURNSPEED = 0.12
 DRIVESPEED = 0.25
 WAIT = 0.2
 
@@ -61,27 +56,23 @@ def reverse(speed_level=0):
     mtrs[1].power = -(DRIVESPEED+speed_level)
 
 
-def getEncoderCount(motor): #FIXME
+def getEncoderCount(motor):
     if motor == "left":
         command = "e"
     else:
         command = "f"
     while True:
         robot.sleep(0.05)
-        sensorInfo = uno.command(command)
-        if sensorInfo:
-            sensorInfo = sensorInfo.split(",")[0]
-            return int(sensorInfo)
+        strEncoderCount = uno.command(command)
+        if strEncoderCount: # Checks for non-empty string
+            encoderCount = float(strEncoderCount)
+            return encoderCount
     
 
 def calculateDistance(encoderCount, motor=None):
     distance = (encoderCount / CPR) * pi * WHEEL_DIAMETER # Distance in mm
     return distance
 
-def microswitch(): 
-    microswitchState = uno.command("e")
-    microswitchState = bool(microswitchState.split(",")[1])
-    return microswitchState
 
 def findTarget(targetid):
     '''Identify a marker based on its ID. Return the marker object if found, else return None.'''
@@ -101,12 +92,12 @@ def closestMarker(clockwise_turn, type):
     print("closestMarker")
     markers = []
     startTime = robot.time()
-    TIMEOUT = 25
+    TIMEOUT = 12
 
     while len(markers) == 0 and robot.time() - startTime < TIMEOUT:
         markers = [marker for marker in robot.camera.see() if marker.id in type]
         turn(clockwise_turn)
-        robot.sleep(2.5*WAIT)
+        robot.sleep(3*WAIT)
         brake()
         robot.sleep(WAIT)
 
@@ -140,7 +131,7 @@ def turnSee(targetid, clockwise_turn, threshold):
         robot.sleep(WAIT)
         target_marker = findTarget(targetid)
         print(target_marker)
-        if robot.time() - startTime > TIMEOUT:
+        if robot.time() - startTime < TIMEOUT:
             print("turnSee timed out")
             return -1
         
@@ -154,11 +145,11 @@ def turnSee(targetid, clockwise_turn, threshold):
         if target_marker.position.horizontal_angle > 2.5*threshold:
             turn(True, 0.2)
         elif target_marker.position.horizontal_angle < -threshold:
-            turn(False, -0.04)
+            turn(False)
         elif target_marker.position.horizontal_angle > threshold:
-            turn(True, -0.04)
+            turn(True)
         print(target_marker.position.horizontal_angle)
-        robot.sleep(WAIT)
+        robot.sleep(0.9*WAIT)
         brake()
         robot.sleep(WAIT)
     print(f"Found marker, {target_marker}")
@@ -176,22 +167,15 @@ def markerApproach(targetid, distance, threshold=0.1):
         return -1
     
     prevDistance = calculateDistance(getEncoderCount("left"))
-    notMoving = 0
     while target_marker.position.distance > distance:
         print("Driving")
         drive(0.2)
         robot.sleep(WAIT)
         print(f"Motor currents/A: {mtrs[0].current}; {mtrs[1].current}")
         currDistance = calculateDistance(getEncoderCount("left"))
-            
-        if currDistance - prevDistance < 20:
-            notMoving += 1
-            if notMoving > 4:
-                print("We are stuck against a wall, but wheels still touch the ground")
-                helpICantSee()
-        else:
-            notMoving = 0
-
+        if currDistance - prevDistance < 20: #if we haven't moved more than 20mm since last repetition of while loop
+            print("We are stuck against a wall, but wheels still touch the ground")
+            helpICantSee()
         #elif motorcurrents dropped v rapidly:
         #    print("Motors are in the air!")
         #    helpImStuck()
@@ -205,69 +189,46 @@ def markerApproach(targetid, distance, threshold=0.1):
     brake()
 
 
-
-def encoderMicroswitchDrive(distance, useMicroswitch=False):
+def encoderDrive(distance):
     """Drive a set distance using encoders"""
     print("encoderDrive")
-    TIMEOUT = 5
+    TIMEOUT = 8
     startTime = robot.time()
-    startDistance = calculateDistance(getEncoderCount("left")) #FIXME: adjust for microswitch
-    prevDistance = 0
+    startDistance = calculateDistance(getEncoderCount("left"))
+    prevDistance = startDistance
     print("start: ", startDistance)
-    prevMicroswitchState = 0
-    notMoving = 0
-    while robot.time() - startTime < TIMEOUT or encoderDistance > 2*distance:
+    while robot.time() - startTime < TIMEOUT:
         drive()
-        encoderCount = getEncoderCount("left") #FIXME: adjust for microswitch
-        encoderDistance = calculateDistance(encoderCount, "left") - startDistance #FIXME: adjust for microswitch
+        encoderCount = getEncoderCount("left")
+        encoderDistance = calculateDistance(encoderCount, "left") - startDistance
         print(f"Encoder Count: {encoderCount}\t Distance: {encoderDistance}")
-
-        if useMicroswitch:
-            if encoderDistance >= 0.7*distance and (prevMicroswitchState > 3): # if microswitch has been pressed for 3 consecutive iterations
-                print("Reached distance AND microswitch pressed")
-                brake()
-                return
-        else:
-            if encoderDistance >= (distance):
-                brake()
-                return
-            
+        if encoderDistance >= (distance):
+            brake()
+            return
         if encoderDistance - prevDistance < 20:
-            notMoving += 1
-            if notMoving > 4:
-                print("We are stuck against a wall, but wheels still touch the ground")
-                helpICantSee()
-        else:
-            notMoving = 0
-
-        robot.sleep(WAIT)
+            print("We are stuck against a wall, but wheels still touch the ground")
+            helpICantSee()
+        robot.sleep(0.1)
         prevDistance = encoderDistance
-        if microswitch():
-            prevMicroswitchState += 1
-        else:
-            prevMicroswitchState = 0
-
 
 
 def helpICantSee():
     """Move us into a better position for seeing"""
-    print("cant see help")
     match randint(0,2):
         case 0:
             reverse()
         case 1: 
-            turn(True, 0.15)
+            turn(True, 0.5)
         case 2:
-            drive(0.4)
-    robot.sleep(1)
+            drive(0.5)
+    robot.sleep(2)
     brake()
     robot.sleep(WAIT)
 
 
 def helpImStuck():
     """Aggressively turn every motor we have randomly"""
-    print("stuck")
-    match randint(0,4):
+    match randint(0,3):
         case 0:
             reverse(1)
         case 1: 
@@ -278,7 +239,7 @@ def helpImStuck():
             mech_board[0].power = 1
         case 4:
             mech_board[0].power = -1
-    robot.sleep(1)
+    robot.sleep(2)
     brake()
     mech_board[0].power = 0
     robot.sleep(WAIT)
@@ -293,19 +254,14 @@ def release():
     reverse()
     robot.sleep(2)
     mech_board[0].power = 0.6
-    robot.sleep(0.47)
+    robot.sleep(0.6)
     mech_board[0].power = 0
     return
 
 
 def eggChecker():
-    print("eggChecker")
-    NEAR_ADJACENT_OPPONENT_IDS = [i for i in range(((robot.zone + 1) % 4) * 7, ((robot.zone + 1) % 4) * 7 + 3)] + \
-            [i for i in range(((robot.zone + 3) % 4) * 7, ((robot.zone + 3) % 4) * 7 + 3)]
-    # while we don't see asteroids or the far half of the adjacent opponents' bases
     while len([marker for marker in robot.camera.see() if marker.id in ASTEROID_IDS]) == 0 and \
-            len([marker for marker in robot.camera.see() if marker.id in NEAR_ADJACENT_OPPONENT_IDS]) == 0:
-        print("scanning for egg")
+            len([marker for marker in robot.camera.see() if marker.id in BASE_IDS]) > 0:
         turn(bool(iteration_no % 2), 0.4) # the direction in which it turns alternates each time to allow for checking if the egg is in our base
         robot.sleep(WAIT)
         brake()
@@ -314,7 +270,6 @@ def eggChecker():
             print("EGG IS IN OUR BASE!")
             return True
     return False
-
 
 def eggApproach():
     """Approaches the egg. Returns -1 if timeout"""
@@ -330,7 +285,7 @@ def eggApproach():
         if robot.time() - startTime < TIMEOUT:
             print("Timeout on turnSee for egg")
             return -1
-    encoderMicroswitchDrive(700)
+    encoderDrive(700)
 
 
 def eggMover():
@@ -387,9 +342,6 @@ def eggMover():
     
     return
 
-
-
-
 def main():
     print("START")
 
@@ -406,8 +358,7 @@ def main():
         main()
         return
     
-    #encoderDrive(700)
-    encoderMicroswitchDrive(700)
+    encoderDrive(700)
     robot.sleep(WAIT)
     mtrs[0].power = 0.3
     robot.sleep(0.5)
@@ -428,17 +379,13 @@ def main():
     brake()
     robot.sleep(WAIT)
 
-    # Everything below here needs to be tested again
     release()
 
     if eggChecker():
-        if eggApproach() == -1:
-            main() # get it next iteration
-        if eggMover() == -1:
-            main() # get it next iteration
+        eggApproach()
+        eggMover()
 
     ASTEROID_IDS.remove(asteroid.id)
-    global iteration_no
     iteration_no += 1
 
 
