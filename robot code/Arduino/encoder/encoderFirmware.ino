@@ -13,6 +13,7 @@
 #define WHEEL_DIAMETER 80 // mm
 volatile long encoderCountLeft = 0;
 volatile long encoderCountRight = 0;
+bool microswitch_state = false;
 int lastEndcodedLeft = 0;
 int lastEndcodedRight = 0;
 
@@ -111,7 +112,7 @@ void loop()
       break;
     // Custom firmware onwards
     case 'e':
-      Serial.println(String(encoderCountLeft) + ',' + String(encoderCountRight) + "," + String(buttonState ? "True" : "False"));
+      Serial.println(String(encoderCountLeft) + ',' + String(encoderCountRight) + "," + String(microswitch_state ? "true" : "false"));
       // Format: "<encoderCountLeft>,<True/False>"
       break;
     default:
@@ -159,5 +160,5 @@ void encoderISR2()
 
 void microswitch()
 {
-  microswitch_state = digitalRead(MICROSWITCH);
+  bool microswitch_state = digitalRead(MICROSWITCH);
 }
