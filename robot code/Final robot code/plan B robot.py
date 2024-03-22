@@ -213,7 +213,7 @@ def markerApproach(targetid, distance, threshold=0.1):
 
 
 
-def encoderMicroswitchDrive(distance, useMicroswitch=False):
+def encoderMicroswitchDrive(distance, useMicroswitch=True):
     """Drive a set distance using encoders"""
     print("encoderDrive")
     TIMEOUT = 5
