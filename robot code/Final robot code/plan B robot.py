@@ -69,18 +69,23 @@ def getEncoderCount(motor):
         robot.sleep(0.05)
         sensorInfo = uno.command("e")
         if sensorInfo:
-            sensorInfo = sensorInfo.split(",")[motor]
-            return int(sensorInfo)
+            print(sensorInfo)
+            encoderCount = sensorInfo.split(",")[motor]
+            return int(encoderCount)
     
 
 def calculateDistance(encoderCount):
     distance = (encoderCount / CPR) * pi * WHEEL_DIAMETER # Distance in mm
     return distance
 
-def microswitch(): 
-    microswitchState = uno.command("e")
-    microswitchState = bool(microswitchState.split(",")[2])
-    return microswitchState
+def microswitch():
+    while True:
+        robot.sleep(0.05)
+        sensorInfo = uno.command("e")
+        if sensorInfo:
+            print(sensorInfo)
+            microswitchState = bool(sensorInfo.split(",")[2])
+            return microswitchState
 
 def findTarget(targetid):
     '''Identify a marker based on its ID. Return the marker object if found, else return None.'''
@@ -92,6 +97,7 @@ def findTarget(targetid):
     return None
 
 
+"""
 def closestMarker(clockwise_turn, markerType):
     '''
     Returns the first marker it sees whilst turning
@@ -123,6 +129,35 @@ def closestMarker(clockwise_turn, markerType):
         brake()
         robot.sleep(WAIT)
 
+    print(closest)
+    brake()
+    return closest
+"""
+
+
+def closestMarker(clockwise_turn, type):
+    '''
+    Returns the first marker it sees whilst turning
+    Returns None if not found / timeout
+    '''
+    print("closestMarker")
+    markers = []
+    startTime = robot.time()
+    TIMEOUT = 25
+
+    while len(markers) == 0 and robot.time() - startTime < TIMEOUT:
+        markers = [marker for marker in robot.camera.see() if marker.id in type]
+        turn(clockwise_turn)
+        robot.sleep(2.5*WAIT)
+        brake()
+        robot.sleep(WAIT)
+
+    closest = None
+    for marker in markers:
+        if closest == None:
+            closest = marker
+        if marker.position.distance < closest.position.distance:
+            closest = marker
     print(closest)
     brake()
     return closest
@@ -216,7 +251,7 @@ def markerApproach(targetid, distance, threshold=0.1):
 def encoderMicroswitchDrive(distance, useMicroswitch=True):
     """Drive a set distance using encoders"""
     print("encoderDrive")
-    TIMEOUT = 5
+    TIMEOUT = 15
     TOLERANCE = 20 # count no. for which the motors are considered out of sync
     REVERSEPOWER = 0.01 # amount by which drive speed is reduced to adjust motors
     startTime = robot.time()
@@ -237,8 +272,10 @@ def encoderMicroswitchDrive(distance, useMicroswitch=True):
         
         if leftEncoderCount > rightEncoderCount + TOLERANCE:
             mtrs[0].power -= REVERSEPOWER
+            print("adjusting A")
         elif rightEncoderCount > leftEncoderCount + TOLERANCE:
             mtrs[1].power -= REVERSEPOWER
+            print("adjusting B")
 
         if useMicroswitch:
             if leftEncoderDistance >= 0.7 * distance and (prevMicroswitchState > 3): # if microswitch has been pressed for 3 consecutive iterations
@@ -250,7 +287,7 @@ def encoderMicroswitchDrive(distance, useMicroswitch=True):
                 brake()
                 return
             
-        if leftEncoderDistance - prevDistance < 20:
+        if leftEncoderDistance - prevDistance < 10 and rightEncoderDistance - prevDistance < 10:
             notMoving += 1
             if notMoving > 4:
                 print("We are stuck against a wall, but wheels still touch the ground")
@@ -264,7 +301,7 @@ def encoderMicroswitchDrive(distance, useMicroswitch=True):
             prevMicroswitchState += 1
         else:
             prevMicroswitchState = 0
-
+    print("Timeout:", robot.time() - startTime)
 
 
 def helpICantSee():
@@ -431,6 +468,7 @@ def main():
     robot.sleep(0.5)
     brake()
 
+    print("finding base")
     base = closestMarker(True, BASE_IDS)
     while base == None:
         helpICantSee()
