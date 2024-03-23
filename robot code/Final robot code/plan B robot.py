@@ -18,7 +18,6 @@ robot = Robot()
 mtrs = robot.motor_boards["SR0UK1L"].motors # driving motors
 mech_board = robot.motor_boards["SR0KJ15"].motors
 uno = robot.arduino
-robot.arduino.pins[7].mode = INPUT_PULLUP
 
 iteration_no = 0 # number of iterations of main while loop
 
@@ -73,10 +72,11 @@ def getEncoderCount(motor):
             encoderCount = sensorInfo.split(",")[motor]
             return int(encoderCount)
     
-
+    
 def calculateDistance(encoderCount):
     distance = (encoderCount / CPR) * pi * WHEEL_DIAMETER # Distance in mm
     return distance
+
 
 def microswitch():
     while True:
@@ -84,8 +84,9 @@ def microswitch():
         sensorInfo = uno.command("e")
         if sensorInfo:
             print(sensorInfo)
-            microswitchState = bool(sensorInfo.split(",")[2])
+            microswitchState = bool(int(sensorInfo.split(",")[2]))
             return microswitchState
+
 
 def findTarget(targetid):
     '''Identify a marker based on its ID. Return the marker object if found, else return None.'''
@@ -191,9 +192,9 @@ def turnSee(targetid, clockwise_turn, threshold):
         target_marker = findTarget(targetid)
         if target_marker == None:
             return -1
-        if target_marker.position.horizontal_angle < -2.5*threshold:
+        if target_marker.position.horizontal_angle < -3*threshold:
             turn(False, 0.2)
-        if target_marker.position.horizontal_angle > 2.5*threshold:
+        if target_marker.position.horizontal_angle > 3*threshold:
             turn(True, 0.2)
         elif target_marker.position.horizontal_angle < -threshold:
             turn(False, -0.04)
@@ -226,7 +227,7 @@ def markerApproach(targetid, distance, threshold=0.1):
         print(f"Motor currents/A: {mtrs[0].current}; {mtrs[1].current}")
         currDistance = calculateDistance(getEncoderCount("left"))
             
-        if currDistance - prevDistance < 20:
+        if abs(currDistance - prevDistance) < 20:
             notMoving += 1
             if notMoving > 4:
                 print("We are stuck against a wall, but wheels still touch the ground")
@@ -253,30 +254,36 @@ def encoderMicroswitchDrive(distance, useMicroswitch=True):
     print("encoderDrive")
     TIMEOUT = 15
     TOLERANCE = 20 # count no. for which the motors are considered out of sync
-    REVERSEPOWER = 0.01 # amount by which drive speed is reduced to adjust motors
+    REVERSEPOWER = 0.1 # amount by which drive speed is reduced to adjust motors
     startTime = robot.time()
-    startDistance = calculateDistance(getEncoderCount("left")) 
-    prevDistance = 0
-    print("start: ", startDistance)
+    startLeftDistance = calculateDistance(getEncoderCount("left"))
+    startRightDistance = calculateDistance(getEncoderCount("right"))
+    prevLeftDistance = 0
+    prevRightDistance = 0
+    print("start:L,R:", startLeftDistance, startRightDistance)
     prevMicroswitchState = 0
     notMoving = 0
     drive()
     while robot.time() - startTime < TIMEOUT or leftEncoderDistance > 2*distance:
         leftEncoderCount = getEncoderCount("left") 
-        leftEncoderDistance = calculateDistance(leftEncoderCount) - startDistance 
+        leftEncoderDistance = calculateDistance(leftEncoderCount) - startLeftDistance 
         rightEncoderCount = getEncoderCount("right")
-        rightEncoderDistance = calculateDistance(rightEncoderCount) - startDistance
+        rightEncoderDistance = calculateDistance(rightEncoderCount) - startRightDistance
 
         print(f"Left Encoder Count: {leftEncoderCount}\t Distance: {leftEncoderDistance}")
         print(f"Right Encoder Count: {rightEncoderCount}\t Distance: {rightEncoderDistance}")
         
+        """
         if leftEncoderCount > rightEncoderCount + TOLERANCE:
             mtrs[0].power -= REVERSEPOWER
             print("adjusting A")
         elif rightEncoderCount > leftEncoderCount + TOLERANCE:
             mtrs[1].power -= REVERSEPOWER
             print("adjusting B")
-
+        else:
+            drive()
+        """
+            
         if useMicroswitch:
             if leftEncoderDistance >= 0.7 * distance and (prevMicroswitchState > 3): # if microswitch has been pressed for 3 consecutive iterations
                 print("Reached distance AND microswitch pressed")
@@ -287,7 +294,8 @@ def encoderMicroswitchDrive(distance, useMicroswitch=True):
                 brake()
                 return
             
-        if leftEncoderDistance - prevDistance < 10 and rightEncoderDistance - prevDistance < 10:
+        #if leftEncoderDistance - prevLeftDistance < 10 or rightEncoderDistance - prevRightDistance < 10:
+        if abs(leftEncoderDistance - prevLeftDistance) < 10:
             notMoving += 1
             if notMoving > 4:
                 print("We are stuck against a wall, but wheels still touch the ground")
@@ -296,7 +304,8 @@ def encoderMicroswitchDrive(distance, useMicroswitch=True):
             notMoving = 0
 
         robot.sleep(WAIT)
-        prevDistance = leftEncoderDistance
+        prevLeftDistance = leftEncoderDistance
+        prevRightDistance = rightEncoderDistance
         if microswitch():
             prevMicroswitchState += 1
         else:
@@ -313,7 +322,7 @@ def helpICantSee():
         case 1: 
             turn(True, 0.15)
         case 2:
-            drive(0.4)
+            drive(0.3)
     robot.sleep(1)
     brake()
     robot.sleep(WAIT)

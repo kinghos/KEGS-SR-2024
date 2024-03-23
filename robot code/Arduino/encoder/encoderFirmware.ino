@@ -22,7 +22,7 @@ void setup()
   Serial.begin(SERIAL_BAUD);
   pinMode(ENCODER1_PIN_A, INPUT);
   pinMode(ENCODER1_PIN_B, INPUT);
-  pinMode(MICROSWITCH, INPUT);
+  pinMode(MICROSWITCH, INPUT_PULLUP);
 
   // Makes change on either pin trigger an interrupt
   attachInterrupt(digitalPinToInterrupt(ENCODER1_PIN_A), encoderISR1, CHANGE);
@@ -112,12 +112,10 @@ void loop()
       break;
     // Custom firmware onwards
     case 'e':
-      Serial.println(String(encoderCountLeft) + ',' + String(encoderCountRight) + "," + String(microswitch_state ? "true" : "false"));
-      // Format: "<encoderCountLeft>,<True/False>"
+      Serial.println(String(encoderCountLeft) + ',' + String(encoderCountRight) + "," + String(microswitch_state ? "1" : "0"));
+      // Format: "<encoderCountLeft>,<encoderCountRight>,<1/0>"
       break;
     default:
-      // A problem here: we do not know how to handle the command!
-      // Just ignore this for now.
       break;
     }
     Serial.print("\n");
@@ -134,9 +132,9 @@ void encoderISR1()
   int sum = (lastEndcodedLeft << 2) | encoded; // Adds the previous encoder value to the current value to determine direction
 
   if (sum == 0b1101 || sum == 0b0100 || sum == 0b0010 || sum == 0b1011)
-    encoderCountLeft++;
-  if (sum == 0b1110 || sum == 0b0111 || sum == 0b0001 || sum == 0b1000)
     encoderCountLeft--;
+  if (sum == 0b1110 || sum == 0b0111 || sum == 0b0001 || sum == 0b1000)
+    encoderCountLeft++;
 
   lastEndcodedLeft = encoded; // Store value for next iteration
 }
@@ -151,14 +149,14 @@ void encoderISR2()
   int sum = (lastEndcodedRight << 2) | encoded; // Adds the previous encoder value to the current value to determine direction
 
   if (sum == 0b1101 || sum == 0b0100 || sum == 0b0010 || sum == 0b1011)
-    encoderCountRight++;
-  if (sum == 0b1110 || sum == 0b0111 || sum == 0b0001 || sum == 0b1000)
     encoderCountRight--;
+  if (sum == 0b1110 || sum == 0b0111 || sum == 0b0001 || sum == 0b1000)
+    encoderCountRight++;
 
   lastEndcodedRight = encoded; // Store value for next iteration
 }
 
 void microswitch()
 {
-  bool microswitch_state = digitalRead(MICROSWITCH);
+  microswitch_state = digitalRead(MICROSWITCH);
 }
