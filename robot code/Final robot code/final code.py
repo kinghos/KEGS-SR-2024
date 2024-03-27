@@ -1,14 +1,7 @@
 """
-    Current robot code for plan B+
-    Last tested: 20.03.24 afterschool
-    Untested stuff:
-     - All contingencies
-     - Egg functions
-     - Check how motor current behaves - would help if the robot is stuck on raised platform
-    TODO:
-     - Add checking for if we have done a full revolution without seeing target marker for closestMarker and turnSee
-     - Add closestMarker stuff from simulation (turn to see the opposite left and right markers before making the choice as to which asteroid is closest)
-     """
+    Current robot code for plan B+, with microswitch
+    Last tested: 27.03.24
+"""
 
 from sr.robot3 import *
 from math import pi
@@ -23,7 +16,7 @@ iteration_no = 0 # number of iterations of main while loop
 
 CPR = 2 * pi * 1000/ (4*11 * 0.229) # Magic functioning as of 19.03.24
 WHEEL_DIAMETER = 80
-ASTEROID_IDS = [i for i in range(150, 200)]
+ASTEROID_IDS = [i for i in range(150, 200)] #this isn't actually a constant as we remove asteroids for a blacklist
 BASE_IDS = [i for i in range(robot.zone * 7, (robot.zone + 1) * 7)] # To change zone click settings on robot.lan (defaults to 0)
 NUMBER_OF_WALL_MARKERS = 28
 EGG_ID = 110
@@ -71,7 +64,6 @@ def getEncoderCount(motor):
             print(sensorInfo)
             encoderCount = sensorInfo.split(",")[motor]
             return int(encoderCount)
-    
 
 
 def getSensorData():
@@ -83,7 +75,6 @@ def getSensorData():
             return(sensorInfo.split(","))
     
 
-    
 def calculateDistance(encoderCount):
     distance = (encoderCount / CPR) * pi * WHEEL_DIAMETER # Distance in mm
     return distance
@@ -110,13 +101,14 @@ def findTarget(targetid):
 
 
 """
-def closestMarker(clockwise_turn, markerType):
+def closestAsteroid(clockwise_turn):
     '''
     Returns the first marker it sees whilst turning
     Returns None if not found / timeout
     '''
     print("closestMarker")
     markers = []
+    markerType = ASTEROID_IDS
     startTime = robot.time()
     TIMEOUT = 25
     closest = None
@@ -147,7 +139,7 @@ def closestMarker(clockwise_turn, markerType):
 """
 
 
-def closestMarker(clockwise_turn, type):
+def closestMarker(clockwise_turn, markerType):
     '''
     Returns the first marker it sees whilst turning
     Returns None if not found / timeout
@@ -157,11 +149,11 @@ def closestMarker(clockwise_turn, type):
     startTime = robot.time()
     TIMEOUT = 20
 
-    if type == BASE_IDS:
+    if markerType == BASE_IDS:
         print("closestMarker with base")
 
     while len(markers) == 0 and robot.time() - startTime < TIMEOUT:
-        markers = [marker for marker in robot.camera.see() if marker.id in type]
+        markers = [marker for marker in robot.camera.see() if marker.id in markerType]
         turn(clockwise_turn)
         robot.sleep(2.5*WAIT)
         brake()
@@ -183,7 +175,6 @@ def turnSee(targetid, clockwise_turn, threshold):
     Scans the surroundings for targetid marker, going clockwise (clockwise_turn = True) or anticlockwise (clockwise_turn = False).
     Scans to between -threshold to threshold radians
     Returns -1 for if it loses sight of marker during correcting or timeout
-    Returns True for aligned w/o turning
     '''
     print("turnSee")
     target_marker = findTarget(targetid)
@@ -383,48 +374,26 @@ def eggMover():
     Moves egg to either of the two adjacent opponents' arenas.
     Returns -1 for timeout
     """
-    TIMEOUT = 20
-    startTime = robot.time()
-    print("egg mover")
-    seen_opponent_markers = []
-    while len(seen_opponent_markers) == 0:
-        ADJACENT_OPPONENT_IDS = [i for i in range(((robot.zone + 1) % 4) * 7, ((robot.zone + 2) % 4) * 7)] + \
+    print("eggMover")
+
+    print("finding closest enemy marker adjacent to us")
+    ADJACENT_OPPONENT_IDS = [i for i in range(((robot.zone + 1) % 4) * 7, ((robot.zone + 2) % 4) * 7)] + \
             [i for i in range(((robot.zone + 3) % 4) * 7, robot.zone * 7)]
-        seen_opponent_markers = [marker for marker in robot.camera.see() if marker.id in ADJACENT_OPPONENT_IDS]
-        turn()
-        robot.sleep(WAIT)
-        brake()
-        robot.sleep(WAIT)
-        if robot.time() - startTime > TIMEOUT:
-            return -1
-    print("looking for unfortunate target")
-    opponent_markers = sorted(seen_opponent_markers, key=lambda marker: marker.distance)
+    opponent_markers = closestMarker(True, ADJACENT_OPPONENT_IDS)
+    opponent_markers = sorted(opponent_markers, key=lambda marker: marker.position.distance)
     chosen_opponent_marker = opponent_markers[0]
     
+    print("turning to this marker")
     while turnSee(chosen_opponent_marker) == -1:
-        seen_opponent_markers = [marker for marker in robot.camera.see() if marker.id in ADJACENT_OPPONENT_IDS]
-        while len(seen_opponent_markers) == 0:
-            helpICantSee()
-            seen_opponent_markers = [marker for marker in robot.camera.see() if marker.id in ADJACENT_OPPONENT_IDS]
-            if robot.time() - startTime > TIMEOUT:
-                return -1
-        opponent_markers = sorted(seen_opponent_markers, key=lambda marker: marker.distance)
-        chosen_opponent_marker = opponent_markers[0]
-        if robot.time() - startTime > TIMEOUT:
-            return -1
+        helpICantSee()
+        eggMover() # reset
+        return
     
     print("approaching enemy marker")
     while markerApproach(chosen_opponent_marker) == -1:
-        seen_opponent_markers = [marker for marker in robot.camera.see() if marker.id in ADJACENT_OPPONENT_IDS]
-        while len(seen_opponent_markers) == 0:
-            helpICantSee()
-            seen_opponent_markers = [marker for marker in robot.camera.see() if marker.id in ADJACENT_OPPONENT_IDS]
-            if robot.time() - startTime > TIMEOUT:
-                return -1
-        opponent_markers = sorted(seen_opponent_markers, key=lambda marker: marker.distance)
-        chosen_opponent_marker = opponent_markers[0]
-        if robot.time() - startTime > TIMEOUT:
-            return -1
+        helpICantSee()
+        eggMover() # reset
+        return
 
     brake()
     robot.sleep(WAIT)
