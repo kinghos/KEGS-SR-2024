@@ -1,10 +1,10 @@
 """
-    Current robot code for plan B+
-    Last tested: 20.03.24 afterschool
+    Current robot code for plan B+ without microswitch
+    Current final robot code
+    Last tested: 
     Untested stuff:
      - All contingencies
      - Egg functions
-     - Check how motor current behaves - would help if the robot is stuck on raised platform
     TODO:
      - Add checking for if we have done a full revolution without seeing target marker for closestMarker and turnSee
      - Add closestMarker stuff from simulation (turn to see the opposite left and right markers before making the choice as to which asteroid is closest)
