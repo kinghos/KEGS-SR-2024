@@ -9,6 +9,7 @@
 #define MICROSWITCH 7
 #define WHEEL_DIAMETER 80 // mm
 volatile long encoderCount = 0;
+bool microswitch_state = false;
 int lastEncoded = 0;
 
 void setup()
@@ -16,7 +17,6 @@ void setup()
   Serial.begin(SERIAL_BAUD);
   pinMode(ENCODER_PIN_A, INPUT);
   pinMode(ENCODER_PIN_B, INPUT);
-  pinMode(MICROSWITCH, INPUT_PULLUP);
 
   // Makes change on either pin trigger an interrupt
   attachInterrupt(digitalPinToInterrupt(ENCODER_PIN_A), encoderISR, CHANGE);
@@ -102,7 +102,7 @@ void loop()
       break;
     // Custom firmware onwards
     case 'e':
-      Serial.println(String(encoderCount) + ',' + String(digitalRead(MICROSWITCH) ? "1" : "0"));
+      Serial.println(String(encoderCount));
       // Format: "<encoderCount>,<1/0>"
       break;
     default:

@@ -78,6 +78,16 @@ def calculateDistance(encoderCount):
     return distance
 
 
+def microswitch():
+    while True:
+        robot.sleep(0.05)
+        sensorInfo = uno.command("e")
+        if sensorInfo:
+            print(sensorInfo)
+            microswitchState = bool(int(sensorInfo.split(",")[1]))
+            return microswitchState
+
+
 def findTarget(targetid):
     '''Identify a marker based on its ID. Return the marker object if found, else return None.'''
     markers = robot.camera.see()
@@ -242,7 +252,7 @@ def markerApproach(targetid, distance, threshold=0.1):
 
 
 def encoderDrive(distance):
-    """Drive a set distance using encoders"""
+    """Drive a set distance using encoders AND MICROSWITCH"""
     print("encoderDrive")
     TIMEOUT = 15
     startTime = robot.time()
@@ -255,7 +265,7 @@ def encoderDrive(distance):
         encoderCount = getEncoderCount("left")
         encoderDistance = calculateDistance(encoderCount) - startDistance
         print(f"Encoder Count: {encoderCount}\t Distance: {encoderDistance}")
-        if encoderDistance >= (distance):
+        if encoderDistance >= (0.9 * distance) and microswitch():
             brake()
             return
         
