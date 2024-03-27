@@ -125,10 +125,8 @@ void encoderISR()
 
   int sum = (lastEncoded << 2) | encoded; // Adds the previous encoder value to the current value to determine direction
 
-  if (sum == 0b1101 || sum == 0b0100 || sum == 0b0010 || sum == 0b1011)
+  if (sum == 0b0001 || sum == 0b0111 || sum == 0b1110 || sum == 0b1000)
     encoderCount++;
-  if (sum == 0b1110 || sum == 0b0111 || sum == 0b0001 || sum == 0b1000)
-    encoderCount--;
 
   lastEncoded = encoded; // Store value for next iteration
 }
