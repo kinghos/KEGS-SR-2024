@@ -1,5 +1,10 @@
 #include <Arduino.h>
 
+/*
+  Everything seems to lag behind by a couple seconds.
+*/
+
+
 // We communicate with the Arduino at 115200 baud.
 #define SERIAL_BAUD 115200
 #define FW_VER 1
