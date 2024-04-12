@@ -20,12 +20,8 @@ int lastEncoded = 0;
 void setup()
 {
   Serial.begin(SERIAL_BAUD);
-  pinMode(ENCODER_PIN_A, INPUT);
-  pinMode(ENCODER_PIN_B, INPUT);
   pinMode(MICROSWITCH, INPUT_PULLUP);
 
-  attachInterrupt(digitalPinToInterrupt(ENCODER_PIN_A), encoderISR, CHANGE);
-  attachInterrupt(digitalPinToInterrupt(ENCODER_PIN_B), encoderISR, CHANGE);
 }
 
 int read_pin()
@@ -105,23 +101,8 @@ void loop()
       Serial.print("SRcustom:");
       Serial.print(FW_VER);
       break;
-    // Custom firmware onwards
-    case 'd': // ENABLE ENCODER
-      detachInterrupt(digitalPinToInterrupt(MICROSWITCH));
-      attachInterrupt(digitalPinToInterrupt(ENCODER_PIN_A), encoderISR, CHANGE);
-      attachInterrupt(digitalPinToInterrupt(ENCODER_PIN_B), encoderISR, CHANGE);
-      break;
-    case 'e': // RETURN ENCODER
-      // Makes change on either pin trigger an interrupt
-      Serial.println(String(encoderCount));
-      break;
-    case 'f': // ENABLE MICROSWITCH
-      attachInterrupt(digitalPinToInterrupt(MICROSWITCH), microswitchISR, CHANGE);
-      detachInterrupt(digitalPinToInterrupt(ENCODER_PIN_A));
-      detachInterrupt(digitalPinToInterrupt(ENCODER_PIN_B));
-      break;
     case 'g': // RETURN MICROSWITCH
-      Serial.println(microswitch_state ? "1" : "0");
+      Serial.print(microswitch_state ? "1" : "0");
       break;
     default:
       // A problem here: we do not know how to handle the command!

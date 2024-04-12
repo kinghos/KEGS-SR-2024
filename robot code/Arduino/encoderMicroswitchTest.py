@@ -1,14 +1,18 @@
 from sr.robot3 import *
+from math import pi
 
 robot = Robot()
 uno = robot.arduino
 
+CPR = 2 * pi * 1000/ (4*11 * 0.229) # Magic functioning as of 19.03.24
+WHEEL_DIAMETER = 80
 
 """
+case 'd': // ENABLE ENCODER
 case 'e': // RETURN ENCODER
 case 'f': // ENABLE MICROSWITCH
 case 'g': // RETURN MICROSWITCH
-case 'h': // ENABLE ENCODER
+
 """
 
 def getMicroswitch():
@@ -28,10 +32,16 @@ def getEncoder():
         encoderInfo = uno.command("e")
         if encoderInfo:
             print(encoderInfo)
-            return(encoderInfo)
+            return int(encoderInfo)
+
+
+def calculateDistance(encoderCount):
+    distance = (encoderCount / CPR) * pi * WHEEL_DIAMETER # Distance in mm
+    return distance
+
 
 def enableEncoder():
-    uno.command("h")
+    uno.command("d")
     return
 
 def enableMicroswitch():
@@ -41,9 +51,9 @@ def enableMicroswitch():
 while True:
     print("getting encoder")
     for i in range(0,50):
-        getEncoder()
+        print(calculateDistance(getEncoder()))
         robot.sleep(0.1)
-    robot.sleep(1)
+    robot.sleep(2)
     print("enabling microswitch")
     enableMicroswitch()
     print("getting microswitch")
