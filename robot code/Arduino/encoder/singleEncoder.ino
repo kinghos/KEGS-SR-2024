@@ -107,7 +107,7 @@ void loop()
       break;
     // Custom firmware onwards
     case 'e':
-      Serial.println(String(encoderCount) + ',' + String(digitalRead(MICROSWITCH) ? "1" : "0"));
+      Serial.print(String(encoderCount) + ',' + String(digitalRead(MICROSWITCH) ? "1" : "0"));
       // Format: "<encoderCount>,<1/0>"
       break;
     default:
