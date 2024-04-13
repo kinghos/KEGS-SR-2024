@@ -25,7 +25,7 @@ STARBOARD_ID = robot.zone + 125
 
 TURNSPEED = 0.17
 DRIVESPEED = 0.3
-WAIT = 0.18
+WAIT = 0.2
 
 print(BASE_IDS)
 #uno.pins[2].mode = INPUT
@@ -165,7 +165,7 @@ def turnSee(targetid, clockwise_turn, threshold):
         turn(clockwise_turn)
         robot.sleep(WAIT)
         brake()
-        robot.sleep(WAIT)
+        robot.sleep(1.5*WAIT)
         target_marker = findTarget(targetid)
         print(target_marker)
         if robot.time() - startTime > TIMEOUT:
@@ -188,7 +188,7 @@ def turnSee(targetid, clockwise_turn, threshold):
         print(target_marker.position.horizontal_angle)
         robot.sleep(WAIT)
         brake()
-        robot.sleep(WAIT)
+        robot.sleep(1.5*WAIT)
     print(f"Found marker, {target_marker}")
     brake()
 
@@ -203,6 +203,7 @@ def markerApproach(targetid, distance, threshold=0.1):
     if target_marker == None:
         return -1
     notMoving = 0
+    
     while target_marker.position.distance > distance:
         print("Driving")
         drive(0.2)
@@ -402,13 +403,11 @@ def main():
             release()
             main()
     while turnSee(base.id, True, 0.1) == -1:
-        helpICantSee()
         base = closestMarker(True, CHOSEN_BASE_IDS)
         while base == None:
             helpICantSee()
             base = closestMarker(True, CHOSEN_BASE_IDS)
     while markerApproach(base.id, 750, 0.2) == -1:
-        helpICantSee()
         base = closestMarker(True, CHOSEN_BASE_IDS)
         while base == None:
             if failure_count < 2:
