@@ -139,7 +139,7 @@ def closestMarker(clockwise_turn, markerType):
         if len(markers) > 0:
             break
         turn(clockwise_turn)
-        checkStuck("turn")
+        checkStuck()
         robot.sleep(2.5*WAIT)
         brake()
         robot.sleep(WAIT)
@@ -211,9 +211,15 @@ def markerApproach(targetid, distance, threshold=0.1):
         return -1
     notMoving = 0
     
-    while target_marker.position.distance > distance:
+    markerDist = target_marker.position.distance
+    speed = 0.2
+    while markerDist > distance:
+        if markerDist > 1500:
+            speed = 0.35
+        else:
+            speed = 0.2
         print("Driving")
-        drive(0.2)
+        drive(speed)
         robot.sleep(WAIT)
         print(f"Motor currents/A: {mtrs[0].current}; {mtrs[1].current}")
             
@@ -224,6 +230,7 @@ def markerApproach(targetid, distance, threshold=0.1):
         target_marker = findTarget(targetid)
         if target_marker == None:
             return -1
+        markerDist = target_marker.position.distance
     brake()
 
 
