@@ -23,12 +23,13 @@ EGG_ID = 110
 PORT_ID = robot.zone + 120
 STARBOARD_ID = robot.zone + 125
 
-TURNSPEED = 0.2
+TURNSPEED = 0.17
 DRIVESPEED = 0.3
 WAIT = 0.2
 
-uno.pins[2].mode = INPUT
-uno.pins[3].mode = INPUT
+print(BASE_IDS)
+#uno.pins[2].mode = INPUT
+#uno.pins[3].mode = INPUT #not used anymore
 uno.pins[7].mode = INPUT_PULLUP
 
 def brake():
@@ -242,12 +243,16 @@ def encoderDrive():
 def helpICantSee():
     """Move us into a better position for seeing"""
     print("cant see help")
-    match randint(1,2):
+    match randint(1,4):
         case 1: 
-            turn(True, 0.15)
+            turn(True, 0.4)
         case 2:
             drive(0.26)
-    robot.sleep(1)
+        case 3:
+            reverse()
+        case 4:
+            reverse()
+    robot.sleep(0.8)
     brake()
     robot.sleep(WAIT)
 
@@ -288,7 +293,9 @@ def release():
 
 def eggChecker():
     print("eggChecker")
-    NEAR_ADJACENT_OPPONENT_IDS = [i for i in range(((robot.zone + 1) % 4) * 7, ((robot.zone + 1) % 4) * 7 + 3)]
+    NEAR_ADJACENT_OPPONENT_IDS = [i for i in range(((robot.zone + 1) % 4) * 7 + 1, ((robot.zone + 2) % 4) * 7)]
+    TIMEOUT = 15
+    startTime = robot.time()
     # while we don't see asteroids or the far half of the adjacent opponents' bases
     while len([marker for marker in robot.camera.see() if marker.id in ASTEROID_IDS]) == 0 and \
             len([marker for marker in robot.camera.see() if marker.id in NEAR_ADJACENT_OPPONENT_IDS]) == 0:
@@ -300,6 +307,8 @@ def eggChecker():
         if findTarget(EGG_ID):
             print("EGG IS IN OUR BASE!")
             return True
+        if robot.time() - startTime > TIMEOUT:
+            return False
     return False
 
 
@@ -380,22 +389,29 @@ def main():
     brake()
 
     print("finding base")
-    base = closestMarker(True, BASE_IDS)
+    CHOSEN_BASE_IDS = BASE_IDS[2:-1]
+    base = closestMarker(True, CHOSEN_BASE_IDS)
     while base == None:
         helpICantSee()
-        base = closestMarker(True, BASE_IDS)
+        base = closestMarker(True, CHOSEN_BASE_IDS)
     while turnSee(base.id, True, 0.1) == -1:
         helpICantSee()
-        base = closestMarker(True, BASE_IDS)
+        base = closestMarker(True, CHOSEN_BASE_IDS)
         while base == None:
             helpICantSee()
-            base = closestMarker(True, BASE_IDS)
-    while markerApproach(base.id, 500, 0.2) == -1:
+            base = closestMarker(True, CHOSEN_BASE_IDS)
+    while markerApproach(base.id, 750, 0.2) == -1:
         helpICantSee()
-        base = closestMarker(True, BASE_IDS)
+        base = closestMarker(True, CHOSEN_BASE_IDS)
         while base == None:
-            helpICantSee()
-            base = closestMarker(True, BASE_IDS)
+            if failure_count < 2:
+                helpICantSee()
+                base = closestMarker(True, BASE_IDS)
+                failure_count += 1
+            else:
+                release()
+                ASTEROID_IDS.remove(asteroid.id)
+                main()
 
     brake()
     robot.sleep(WAIT)
@@ -404,11 +420,12 @@ def main():
     release()
 
     ASTEROID_IDS.remove(asteroid.id)
-
+    iters = 0
     if eggChecker():
-        if eggApproach() == -1:
+        if eggApproach() == -1 and iters < 1:
             helpICantSee()
             eggApproach() # get it next iteration
+            iters += 1 
         if eggMover() == -1:
             main() # get it next iteration
 
