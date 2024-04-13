@@ -338,7 +338,7 @@ def eggMover():
 
     print("finding closest enemy marker adjacent to us")
     ADJACENT_OPPONENT_IDS = [i for i in range(((robot.zone + 1) % 4) * 7, ((robot.zone + 2) % 4) * 7)] + \
-            [i for i in range(((robot.zone + 3) % 4) * 7, robot.zone * 7)]
+            [i for i in range(((robot.zone + 3) % 4) * 7, (robot.zone * 7 - 1) % 27)]
     chosen_opponent_marker = closestMarker(True, ADJACENT_OPPONENT_IDS)
     """opponent_markers = sorted(opponent_markers, key=lambda marker: marker.position.distance)
     chosen_opponent_marker = opponent_markers[0]"""
@@ -453,4 +453,7 @@ def main():
 
 print(robot.zone)
 while True:
-    main()
+    try:
+        main()
+    except:
+        main()
