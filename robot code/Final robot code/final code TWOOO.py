@@ -139,6 +139,7 @@ def closestMarker(clockwise_turn, markerType):
         if len(markers) > 0:
             break
         turn(clockwise_turn)
+        checkStuck("turn")
         robot.sleep(2.5*WAIT)
         brake()
         robot.sleep(WAIT)
@@ -176,6 +177,7 @@ def turnSee(targetid, clockwise_turn, threshold):
         if robot.time() - startTime > TIMEOUT:
             print("turnSee timed out")
             return -1
+        checkStuck()
         
     print("Correcting")
     while target_marker.position.horizontal_angle < -threshold or target_marker.position.horizontal_angle > threshold:
@@ -215,10 +217,7 @@ def markerApproach(targetid, distance, threshold=0.1):
         robot.sleep(WAIT)
         print(f"Motor currents/A: {mtrs[0].current}; {mtrs[1].current}")
             
-
-        #elif motorcurrents dropped v rapidly:
-        #    print("Motors are in the air!")
-        #    helpImStuck()
+        checkStuck()
         brake()
         robot.sleep(WAIT)
         turnSee(target_marker.id, False, threshold)
@@ -240,11 +239,20 @@ def encoderDrive():
         microswitchState = uno.pins[7].digital_read()
         print(f"Microswitch state: {microswitchState}")
 
+        checkStuck()
         if microswitchState:
             brake()
             return
         
         robot.sleep(0.1)
+
+def checkStuck():
+    while mtrs[0].current > UPPER_THRESHOLD_CURRENT and mtrs[1].current > UPPER_THRESHOLD_CURRENT:
+        print("WE ARE STUCK UPPER EXCEEEDED")
+        helpImStuck()
+    while mtrs[0].current < LOWER_THRESHOLD_CURRENT and mtrs[1].current < LOWER_THRESHOLD_CURRENT:
+        print("WE ARE STUCK LOWER EXCEEEDED")
+        helpImStuck()
 
 
 
@@ -264,25 +272,22 @@ def helpICantSee():
     brake()
     robot.sleep(WAIT)
 
-
 def helpImStuck():
-    """Aggressively turn every motor we have randomly"""
-    print("stuck")
-    match randint(0,4):
-        case 0:
-            reverse(1)
+    """Aggressively move us out of being stuck"""
+    print("helpImStuck")
+    match randint(1,4):
         case 1: 
-            drive(1)
+            turn(True, 0.8)
         case 2:
-            turn(True, 1)
+            drive(0.5)
         case 3:
-            mech_board[0].power = 1
+            reverse(0.5)
         case 4:
-            mech_board[0].power = -1
+            reverse(0.5)
     robot.sleep(1)
     brake()
-    mech_board[0].power = 0
     robot.sleep(WAIT)
+
 
 
 def release():
@@ -399,6 +404,7 @@ def main():
     print("finding base")
     CHOSEN_BASE_IDS = BASE_IDS[2:-1]
     base = closestMarker(True, CHOSEN_BASE_IDS)
+    failure_count = 0
     while base == None:
         if failure_count < 2:
             helpICantSee()
@@ -424,18 +430,6 @@ def main():
                 ASTEROID_IDS.remove(asteroid.id)
                 main()
     
-    # startTime = robot.time()
-    # TIMEOUT = 10
-
-    # while robot.time() - startTime > TIMEOUT:
-    #     markers = robot.camera.see()
-    #     base_markers = set()
-    #     for i in markers:
-    #         if i.id in BASE_IDS:
-    #             base_markers.add(i.id)
-    #             markerApproach(i.id)
-
-
     brake()
     robot.sleep(WAIT)
 
@@ -462,4 +456,5 @@ while True:
     try:
         main()
     except:
+        print("BLIMEY" + '-'*100)
         main()
