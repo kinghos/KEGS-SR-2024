@@ -29,8 +29,9 @@ TURNSPEED = 0.17
 DRIVESPEED = 0.3
 WAIT = 0.2
 
-UPPER_THRESHOLD_CURRENT = 1.5 # Amps - current too high
-LOWER_THRESHOLD_CURRENT = 0.2 # current too low
+UPPER_THRESHOLD_CURRENT = 1.4 # Amps - current too high
+MED_THRESHOLD_CURRENT = 0.85
+# LOWER_THRESHOLD_CURRENT = 0.2 # current too low
 
 print(BASE_IDS)
 #uno.pins[2].mode = INPUT
@@ -213,19 +214,22 @@ def markerApproach(targetid, distance, threshold=0.1):
     
     markerDist = target_marker.position.distance
     speed = 0.2
+    waitTime = WAIT
     while markerDist > distance:
-        if markerDist > 1500:
+        if markerDist > 3000:
+            waitTime = WAIT * 3
+        elif markerDist > 1500:
             speed = 0.35
+            waitTime = WAIT * 2
         else:
             speed = 0.2
         print("Driving")
         drive(speed)
-        robot.sleep(WAIT)
-        print(f"Motor currents/A: {mtrs[0].current}; {mtrs[1].current}")
+        robot.sleep(waitTime)
             
         checkStuck()
         brake()
-        robot.sleep(WAIT)
+        robot.sleep(waitTime)
         turnSee(target_marker.id, False, threshold)
         target_marker = findTarget(targetid)
         if target_marker == None:
@@ -254,12 +258,22 @@ def encoderDrive():
         robot.sleep(0.1)
 
 def checkStuck():
-    while mtrs[0].current > UPPER_THRESHOLD_CURRENT and mtrs[1].current > UPPER_THRESHOLD_CURRENT:
+    print(f"Motor currents/A: {mtrs[0].current}; {mtrs[1].current}")
+    noMedCurrent = 0
+
+    if mtrs[0].current > MED_THRESHOLD_CURRENT and mtrs[1].current > MED_THRESHOLD_CURRENT:
+        print("med exceeded " + noMedCurrent)
+        noMedCurrent += 1
+    isStuck = (mtrs[0].current > UPPER_THRESHOLD_CURRENT and mtrs[1].current > UPPER_THRESHOLD_CURRENT) or noMedCurrent > 3
+    while isStuck:
         print("WE ARE STUCK UPPER EXCEEEDED")
         helpImStuck()
-    while mtrs[0].current < LOWER_THRESHOLD_CURRENT and mtrs[1].current < LOWER_THRESHOLD_CURRENT:
-        print("WE ARE STUCK LOWER EXCEEEDED")
-        helpImStuck()
+        if mtrs[0].current > MED_THRESHOLD_CURRENT and mtrs[1].current > MED_THRESHOLD_CURRENT:
+            noMedCurrent += 1
+        isStuck = (mtrs[0].current > UPPER_THRESHOLD_CURRENT and mtrs[1].current > UPPER_THRESHOLD_CURRENT) or noMedCurrent > 3
+    #while mtrs[0].current < LOWER_THRESHOLD_CURRENT and mtrs[1].current < LOWER_THRESHOLD_CURRENT:
+    #    print("WE ARE STUCK LOWER EXCEEEDED")
+    #    helpImStuck()
 
 
 
@@ -291,7 +305,7 @@ def helpImStuck():
             reverse(0.5)
         case 4:
             reverse(0.5)
-    robot.sleep(1)
+    robot.sleep(0.4)
     brake()
     robot.sleep(WAIT)
 
@@ -460,8 +474,7 @@ def main():
 
 print(robot.zone)
 while True:
-    try:
-        main()
-    except:
+    main()
+    """except:
         print("BLIMEY" + '-'*100)
-        main()
+        main()"""
