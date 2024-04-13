@@ -48,13 +48,13 @@ def turn(clockwise=True, speed_level=0):
 
 def drive(speed_level=0):
     '''Speed level: defaults to 0, added to the default turnspeed'''
-    mtrs[0].power = (DRIVESPEED+speed_level) % 1
-    mtrs[1].power = (DRIVESPEED+speed_level) % 1
+    mtrs[0].power = (DRIVESPEED+speed_level) % 1 
+    mtrs[1].power = (DRIVESPEED+speed_level) % 1 + 0.03
 
 def reverse(speed_level=0):
     '''Speed level: defaults to 0, added to the default turnspeed'''
-    mtrs[0].power = -(DRIVESPEED+speed_level)
-    mtrs[1].power = -(DRIVESPEED+speed_level)
+    mtrs[0].power = -(DRIVESPEED+speed_level) 
+    mtrs[1].power = -(DRIVESPEED+speed_level) - 0.03
 
 
 def microswitch():
@@ -284,7 +284,7 @@ def release():
     turn(False, 0.15)
     robot.sleep(1.5*WAIT)
     reverse()
-    robot.sleep(2)
+    robot.sleep(1)
     mech_board[0].power = 0.6
     robot.sleep(0.47)
     mech_board[0].power = 0
@@ -378,7 +378,7 @@ def main():
     if turnSee(asteroid.id, False, 0.05) == -1:
         main()
         return
-    if markerApproach(asteroid.id, 600) == -1:
+    if markerApproach(asteroid.id, 500) == -1:
         main()
         return
     
@@ -392,8 +392,13 @@ def main():
     CHOSEN_BASE_IDS = BASE_IDS[2:-1]
     base = closestMarker(True, CHOSEN_BASE_IDS)
     while base == None:
-        helpICantSee()
-        base = closestMarker(True, CHOSEN_BASE_IDS)
+        if failure_count < 2:
+            helpICantSee()
+            base = closestMarker(True, BASE_IDS)
+            failure_count += 1
+        else:
+            release()
+            main()
     while turnSee(base.id, True, 0.1) == -1:
         helpICantSee()
         base = closestMarker(True, CHOSEN_BASE_IDS)
@@ -412,6 +417,18 @@ def main():
                 release()
                 ASTEROID_IDS.remove(asteroid.id)
                 main()
+    
+    # startTime = robot.time()
+    # TIMEOUT = 10
+
+    # while robot.time() - startTime > TIMEOUT:
+    #     markers = robot.camera.see()
+    #     base_markers = set()
+    #     for i in markers:
+    #         if i.id in BASE_IDS:
+    #             base_markers.add(i.id)
+    #             markerApproach(i.id)
+
 
     brake()
     robot.sleep(WAIT)
