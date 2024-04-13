@@ -9,6 +9,8 @@ from random import randint
 
 robot = Robot()
 mtrs = robot.motor_boards["SR0UK1L"].motors # driving motors
+"""
+ Looking from birds eye with it facing forwards, motor 0 is the right motor, motor 1 is the left (dodgy connection)"""
 mech_board = robot.motor_boards["SR0KJ15"].motors
 uno = robot.arduino
 
@@ -26,6 +28,9 @@ STARBOARD_ID = robot.zone + 125
 TURNSPEED = 0.17
 DRIVESPEED = 0.3
 WAIT = 0.2
+
+UPPER_THRESHOLD_CURRENT = 1.5 # Amps - current too high
+LOWER_THRESHOLD_CURRENT = 0.2 # current too low
 
 print(BASE_IDS)
 #uno.pins[2].mode = INPUT
