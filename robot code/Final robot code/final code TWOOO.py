@@ -25,7 +25,7 @@ STARBOARD_ID = robot.zone + 125
 
 TURNSPEED = 0.17
 DRIVESPEED = 0.3
-WAIT = 0.2
+WAIT = 0.18
 
 print(BASE_IDS)
 #uno.pins[2].mode = INPUT
@@ -131,6 +131,8 @@ def closestMarker(clockwise_turn, markerType):
 
     while len(markers) == 0 and robot.time() - startTime < TIMEOUT:
         markers = [marker for marker in robot.camera.see() if marker.id in markerType]
+        if len(markers) > 0:
+            break
         turn(clockwise_turn)
         robot.sleep(2.5*WAIT)
         brake()
