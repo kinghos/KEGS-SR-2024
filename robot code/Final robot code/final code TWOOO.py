@@ -1,8 +1,3 @@
-"""
-    Current robot code for plan B+, with microswitch
-    Last tested: 27.03.24
-"""
-
 from sr.robot3 import *
 from math import pi
 from random import randint
@@ -29,8 +24,8 @@ TURNSPEED = 0.17
 DRIVESPEED = 0.3
 WAIT = 0.2
 
-UPPER_THRESHOLD_CURRENT = 1.3 # Amps - current too high
-MED_THRESHOLD_CURRENT = 0.85
+UPPER_THRESHOLD_CURRENT = 1.5 # Amps - current too high
+# MED_THRESHOLD_CURRENT = 0.85
 # LOWER_THRESHOLD_CURRENT = 0.2 # current too low
 
 print(BASE_IDS)
@@ -300,7 +295,7 @@ def encoderDrive():
             return
         
         robot.sleep(0.1)
-
+"""
 def checkStuck():
     print(f"Motor currents/A: {mtrs[0].current}; {mtrs[1].current}")
     iter = 0
@@ -316,6 +311,7 @@ def checkStuck():
                 reverse(0.5)
             else:
                 turn([True, False][randint(0,1)], 0.8)
+            robot.sleep(float(randint(5,15))/10)
         if mtrs[0].current > MED_THRESHOLD_CURRENT and mtrs[1].current > MED_THRESHOLD_CURRENT:
             noMedCurrent += 1
         isStuck = (mtrs[0].current > UPPER_THRESHOLD_CURRENT and mtrs[1].current > UPPER_THRESHOLD_CURRENT) or noMedCurrent > 0
@@ -323,7 +319,21 @@ def checkStuck():
     #while mtrs[0].current < LOWER_THRESHOLD_CURRENT and mtrs[1].current < LOWER_THRESHOLD_CURRENT:
     #    print("WE ARE STUCK LOWER EXCEEEDED")
     #    helpImStuck()
+"""
 
+
+def checkStuck():
+    print(f"Motor currents/A: {mtrs[0].current}; {mtrs[1].current}")
+    isStuck = (mtrs[0].current > UPPER_THRESHOLD_CURRENT and mtrs[1].current > UPPER_THRESHOLD_CURRENT)
+    while isStuck:
+        print("WE ARE STUCK UPPER EXCEEEDED")
+        if iter % 2:
+            reverse(0.5)
+        else:
+            turn([True, False][randint(0,1)], 0.8)
+        robot.sleep(float(randint(5,15))/10)
+        isStuck = (mtrs[0].current > UPPER_THRESHOLD_CURRENT and mtrs[1].current > UPPER_THRESHOLD_CURRENT) or noMedCurrent > 0
+        iter += 1
 
 
 def helpICantSee():
@@ -338,7 +348,7 @@ def helpICantSee():
             reverse()
         case 4:
             reverse()
-    robot.sleep(0.8)
+    robot.sleep(float(randint(5,15))/10)
     brake()
     robot.sleep(WAIT)
 
@@ -451,16 +461,19 @@ def eggMover():
 
 
 
-def main():
+def main(first=False):
     print("START")
-
-    asteroid = closestMarker(False, ASTEROID_IDS)
+    if first:
+        direction_for_start = False
+    else:
+        direction_for_start = False
+    asteroid = closestMarker(direction_for_start, ASTEROID_IDS)
     while asteroid == None:
         helpICantSee()
-        asteroid = closestMarker(False, ASTEROID_IDS)
+        asteroid = closestMarker(direction_for_start, ASTEROID_IDS)
     robot.sleep(WAIT)
 
-    if turnSee(asteroid.id, True, 0.05) == -1:
+    if turnSee(asteroid.id, not direction_for_start, 0.05) == -1:
         main()
         return
     if markerApproach(asteroid.id, 500) == -1:
@@ -522,11 +535,12 @@ def main():
     global iteration_no
     iteration_no += 1
 
-
-
 print(robot.zone)
+"""
+spaceshipMove()
+main(True)
+"""
 while True:
-    spaceshipMove()
     main()
     """except:
         print("BLIMEY" + '-'*100)
