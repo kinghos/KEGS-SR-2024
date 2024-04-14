@@ -170,6 +170,7 @@ def turnSee(targetid, clockwise_turn, threshold):
     while target_marker == None:
         print("None found turnSee")
         turn(clockwise_turn)
+        checkStuck()
         robot.sleep(WAIT)
         brake()
         robot.sleep(1.5*WAIT)
@@ -178,7 +179,7 @@ def turnSee(targetid, clockwise_turn, threshold):
         if robot.time() - startTime > TIMEOUT:
             print("turnSee timed out")
             return -1
-        checkStuck()
+
         
     print("Correcting")
     while target_marker.position.horizontal_angle < -threshold or target_marker.position.horizontal_angle > threshold:
