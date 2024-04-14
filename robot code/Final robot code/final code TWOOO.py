@@ -143,7 +143,7 @@ def closestMarker(clockwise_turn, markerType):
         checkStuck()
         robot.sleep(2.5*WAIT)
         brake()
-        robot.sleep(WAIT)
+        robot.sleep(1.5*WAIT)
 
     closest = None
     for marker in markers:
@@ -241,8 +241,13 @@ def markerApproach(targetid, distance, threshold=0.1):
 def spaceshipMove():
     turnSee(PORT_ID, True, 0.1)
     drive()
-    robot.sleep(5.5)
+    robot.sleep(7.5)
     brake()
+    robot.sleep(0.1)
+    reverse()
+    robot.sleep(2)
+    brake()
+    robot.sleep(0.1)
 
 def baseUntilUnsee(base_id):
     '''
@@ -298,21 +303,22 @@ def encoderDrive():
 
 def checkStuck():
     print(f"Motor currents/A: {mtrs[0].current}; {mtrs[1].current}")
-    noMedCurrent = 0
     iter = 0
-    if mtrs[0].current > MED_THRESHOLD_CURRENT and mtrs[1].current > MED_THRESHOLD_CURRENT:
-        print(f"med exceeded {noMedCurrent}")
+    noMedCurrent = 0
+    if mtrs[0].current > MED_THRESHOLD_CURRENT or mtrs[1].current > MED_THRESHOLD_CURRENT:
         noMedCurrent += 1
-    isStuck = (mtrs[0].current > UPPER_THRESHOLD_CURRENT or mtrs[1].current > UPPER_THRESHOLD_CURRENT) or noMedCurrent > 3
+        print(f"med exceeded {noMedCurrent}")
+    isStuck = (mtrs[0].current > UPPER_THRESHOLD_CURRENT and mtrs[1].current > UPPER_THRESHOLD_CURRENT) or noMedCurrent > 0
     while isStuck:
         print("WE ARE STUCK UPPER EXCEEEDED")
-        if iter % 2:
-            reverse(0.5)
-        else:
-            turn([True, False][randint(0,1)], 0.8)
+        if (mtrs[0].current > UPPER_THRESHOLD_CURRENT and mtrs[1].current > UPPER_THRESHOLD_CURRENT) or noMedCurrent > 2:
+            if iter % 2:
+                reverse(0.5)
+            else:
+                turn([True, False][randint(0,1)], 0.8)
         if mtrs[0].current > MED_THRESHOLD_CURRENT and mtrs[1].current > MED_THRESHOLD_CURRENT:
             noMedCurrent += 1
-        isStuck = (mtrs[0].current > UPPER_THRESHOLD_CURRENT and mtrs[1].current > UPPER_THRESHOLD_CURRENT) or noMedCurrent > 3
+        isStuck = (mtrs[0].current > UPPER_THRESHOLD_CURRENT and mtrs[1].current > UPPER_THRESHOLD_CURRENT) or noMedCurrent > 0
         iter += 1
     #while mtrs[0].current < LOWER_THRESHOLD_CURRENT and mtrs[1].current < LOWER_THRESHOLD_CURRENT:
     #    print("WE ARE STUCK LOWER EXCEEEDED")
@@ -448,13 +454,13 @@ def eggMover():
 def main():
     print("START")
 
-    asteroid = closestMarker(True, ASTEROID_IDS)
+    asteroid = closestMarker(False, ASTEROID_IDS)
     while asteroid == None:
         helpICantSee()
-        asteroid = closestMarker(True, ASTEROID_IDS)
+        asteroid = closestMarker(False, ASTEROID_IDS)
     robot.sleep(WAIT)
 
-    if turnSee(asteroid.id, False, 0.05) == -1:
+    if turnSee(asteroid.id, True, 0.05) == -1:
         main()
         return
     if markerApproach(asteroid.id, 500) == -1:
