@@ -343,7 +343,7 @@ def helpICantSee():
         case 1: 
             turn([True, False][randint(0,1)], 0.4)
         case 2:
-            drive(0.26)
+            drive(0.3)
         case 3:
             reverse()
         case 4:
@@ -352,25 +352,16 @@ def helpICantSee():
     brake()
     robot.sleep(WAIT)
 
-"""
-def helpImStuck():
-    #Aggressively move us out of being stuck
-    print("helpImStuck")
-    reverse(0.5)
-    match randint(1,4):
-        case 1: 
-            turn([True, False][randint(0,1)], 0.8)
-        case 2:
-            drive(0.5)
-        case 3:
-            reverse(0.5)
-        case 4:
-            reverse(0.5)
-    robot.sleep(0.4)
-    brake()
-    robot.sleep(WAIT)
-"""
 
+def helpImStuck(iter):
+    #Aggressively move us out of being stuck
+    if iter % 3 == 2:
+        reverse(0.5)
+    if iter % 3 == 1:
+        turn([True, False][randint(0,1)], 0.8)
+    else:
+        drive(0.6)
+    robot.sleep(float(randint(5,15))/10)
 
 def release():
     mech_board[0].power = -0.6
@@ -466,11 +457,15 @@ def main(first=False):
     if first:
         direction_for_start = False
     else:
-        direction_for_start = False
+        direction_for_start = True
     asteroid = closestMarker(direction_for_start, ASTEROID_IDS)
+    closest_marker_failure_count = 0
     while asteroid == None:
         helpICantSee()
         asteroid = closestMarker(direction_for_start, ASTEROID_IDS)
+        closest_marker_failure_count += 1
+        if closest_marker_failure_count:
+            helpImStuck()
     robot.sleep(WAIT)
 
     if turnSee(asteroid.id, not direction_for_start, 0.05) == -1:
