@@ -29,7 +29,7 @@ TURNSPEED = 0.17
 DRIVESPEED = 0.3
 WAIT = 0.2
 
-UPPER_THRESHOLD_CURRENT = 1.4 # Amps - current too high
+UPPER_THRESHOLD_CURRENT = 1.3 # Amps - current too high
 MED_THRESHOLD_CURRENT = 0.85
 # LOWER_THRESHOLD_CURRENT = 0.2 # current too low
 
@@ -238,6 +238,44 @@ def markerApproach(targetid, distance, threshold=0.1):
         markerDist = target_marker.position.distance
     brake()
 
+def spaceshipMove():
+    turnSee(PORT_ID, True, 0.1)
+    drive()
+    robot.sleep(5.5)
+    brake()
+
+def baseUntilUnsee(base_id):
+    '''
+    Approaches the nearest asteroid (the one directly ahead)
+    Returns -1 if loses sight of asteroid
+    '''
+    print("baseUntilUnsee")
+    target_marker = findTarget(base_id)
+    if target_marker == None:
+        return -1
+    notMoving = 0
+    speed = 0.3
+    driveTime = 0.8
+    stopTime = driveTime * 1.5
+    markerDist = 1000000
+    while target_marker and len([marker for marker in robot.camera.see() if marker in BASE_IDS]) == 0:
+
+        if markerDist > 3000:
+            driveTime *= 2
+            stopTime = driveTime * 1.5
+        print("Driving")
+        drive(speed)
+        robot.sleep(driveTime)
+            
+        checkStuck()
+        brake()
+        robot.sleep(stopTime)
+        target_marker = findTarget(base_id)
+        if target_marker == None:
+            return
+        markerDist = target_marker.position.distance
+    brake()
+
 
 def encoderDrive():
     """Drive a set distance using encoders AND MICROSWITCH"""
@@ -263,9 +301,9 @@ def checkStuck():
     noMedCurrent = 0
     iter = 0
     if mtrs[0].current > MED_THRESHOLD_CURRENT and mtrs[1].current > MED_THRESHOLD_CURRENT:
-        print("med exceeded " + noMedCurrent)
+        print(f"med exceeded {noMedCurrent}")
         noMedCurrent += 1
-    isStuck = (mtrs[0].current > UPPER_THRESHOLD_CURRENT and mtrs[1].current > UPPER_THRESHOLD_CURRENT) or noMedCurrent > 3
+    isStuck = (mtrs[0].current > UPPER_THRESHOLD_CURRENT or mtrs[1].current > UPPER_THRESHOLD_CURRENT) or noMedCurrent > 3
     while isStuck:
         print("WE ARE STUCK UPPER EXCEEEDED")
         if iter % 2:
@@ -446,7 +484,8 @@ def main():
         while base == None:
             helpICantSee()
             base = closestMarker(True, CHOSEN_BASE_IDS)
-    while markerApproach(base.id, 750, 0.2) == -1:
+    while baseUntilUnsee(base.id) == -1:
+    #while markerApproach(base.id, 800, 0.2) == -1:
         base = closestMarker(True, CHOSEN_BASE_IDS)
         while base == None:
             if failure_count < 2:
@@ -481,6 +520,7 @@ def main():
 
 print(robot.zone)
 while True:
+    spaceshipMove()
     main()
     """except:
         print("BLIMEY" + '-'*100)
