@@ -235,11 +235,12 @@ def markerApproach(targetid, distance, threshold=0.1):
 
 def spaceshipMove():
     turnSee(PORT_ID, True, 0.1)
-    drive()
-    robot.sleep(7.5)
+    drive(0.2)
+    robot.sleep(3.5)
     brake()
     robot.sleep(0.1)
-    reverse()
+    mtrs[0].power = -0.7
+    mtrs[1].power = -0.7
     robot.sleep(2)
     brake()
     robot.sleep(0.1)
@@ -325,6 +326,7 @@ def checkStuck():
 def checkStuck():
     print(f"Motor currents/A: {mtrs[0].current}; {mtrs[1].current}")
     isStuck = (mtrs[0].current > UPPER_THRESHOLD_CURRENT and mtrs[1].current > UPPER_THRESHOLD_CURRENT)
+    iter = 0
     while isStuck:
         print("WE ARE STUCK UPPER EXCEEEDED")
         if iter % 2:
@@ -332,7 +334,7 @@ def checkStuck():
         else:
             turn([True, False][randint(0,1)], 0.8)
         robot.sleep(float(randint(5,15))/10)
-        isStuck = (mtrs[0].current > UPPER_THRESHOLD_CURRENT and mtrs[1].current > UPPER_THRESHOLD_CURRENT) or noMedCurrent > 0
+        isStuck = (mtrs[0].current > UPPER_THRESHOLD_CURRENT and mtrs[1].current > UPPER_THRESHOLD_CURRENT)
         iter += 1
 
 
@@ -472,6 +474,8 @@ def main(first=False):
         main()
         return
     if markerApproach(asteroid.id, 500) == -1:
+        reverse()
+        robot.sleep(0.3)
         main()
         return
     
@@ -531,12 +535,13 @@ def main(first=False):
     iteration_no += 1
 
 print(robot.zone)
-"""
+
 spaceshipMove()
 main(True)
-"""
+
 while True:
-    main()
-    """except:
+    try:
+        main()
+    except:
         print("BLIMEY" + '-'*100)
-        main()"""
+        main()
