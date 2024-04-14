@@ -261,17 +261,21 @@ def encoderDrive():
 def checkStuck():
     print(f"Motor currents/A: {mtrs[0].current}; {mtrs[1].current}")
     noMedCurrent = 0
-
+    iter = 0
     if mtrs[0].current > MED_THRESHOLD_CURRENT and mtrs[1].current > MED_THRESHOLD_CURRENT:
         print("med exceeded " + noMedCurrent)
         noMedCurrent += 1
     isStuck = (mtrs[0].current > UPPER_THRESHOLD_CURRENT and mtrs[1].current > UPPER_THRESHOLD_CURRENT) or noMedCurrent > 3
     while isStuck:
         print("WE ARE STUCK UPPER EXCEEEDED")
-        helpImStuck()
+        if iter % 2:
+            reverse(0.5)
+        else:
+            turn([True, False][randint(0,1)], 0.8)
         if mtrs[0].current > MED_THRESHOLD_CURRENT and mtrs[1].current > MED_THRESHOLD_CURRENT:
             noMedCurrent += 1
         isStuck = (mtrs[0].current > UPPER_THRESHOLD_CURRENT and mtrs[1].current > UPPER_THRESHOLD_CURRENT) or noMedCurrent > 3
+        iter += 1
     #while mtrs[0].current < LOWER_THRESHOLD_CURRENT and mtrs[1].current < LOWER_THRESHOLD_CURRENT:
     #    print("WE ARE STUCK LOWER EXCEEEDED")
     #    helpImStuck()
@@ -283,7 +287,7 @@ def helpICantSee():
     print("cant see help")
     match randint(1,4):
         case 1: 
-            turn(True, 0.4)
+            turn([True, False][randint(0,1)], 0.4)
         case 2:
             drive(0.26)
         case 3:
@@ -294,12 +298,14 @@ def helpICantSee():
     brake()
     robot.sleep(WAIT)
 
+"""
 def helpImStuck():
-    """Aggressively move us out of being stuck"""
+    #Aggressively move us out of being stuck
     print("helpImStuck")
+    reverse(0.5)
     match randint(1,4):
         case 1: 
-            turn(True, 0.8)
+            turn([True, False][randint(0,1)], 0.8)
         case 2:
             drive(0.5)
         case 3:
@@ -309,7 +315,7 @@ def helpImStuck():
     robot.sleep(0.4)
     brake()
     robot.sleep(WAIT)
-
+"""
 
 
 def release():
