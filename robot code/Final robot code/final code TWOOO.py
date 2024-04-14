@@ -239,9 +239,11 @@ def spaceshipMove():
     robot.sleep(3.5)
     brake()
     robot.sleep(0.1)
-    mtrs[0].power = -0.7
-    mtrs[1].power = -0.7
+    mtrs[0].power = -0.9
+    mtrs[1].power = -0.9
     robot.sleep(2)
+    turn(False, 0.5)
+    robot.sleep(0.7)
     brake()
     robot.sleep(0.1)
 
