@@ -21,7 +21,6 @@ void setup()
   Serial.begin(SERIAL_BAUD);
   pinMode(ENCODER_PIN_A, INPUT);
   pinMode(ENCODER_PIN_B, INPUT);
-  pinMode(MICROSWITCH, INPUT_PULLUP);
 
   // Makes change on either pin trigger an interrupt
   attachInterrupt(digitalPinToInterrupt(ENCODER_PIN_A), encoderISR, CHANGE);
@@ -107,8 +106,8 @@ void loop()
       break;
     // Custom firmware onwards
     case 'e':
-      Serial.print(String(encoderCount) + ',' + String(digitalRead(MICROSWITCH) ? "1" : "0"));
-      // Format: "<encoderCount>,<1/0>"
+      Serial.print(String(encoderCount));
+      // Format: "<encoderCount>"
       break;
     default:
       // A problem here: we do not know how to handle the command!
@@ -126,9 +125,9 @@ void encoderISR()
 
   int encoded = (phaseA << 1) | phaseB; // Combines the two values into one number with a bitwise shift and bitwise OR
 
-  int sum = (lastEncoded << 2) | encoded; // Adds the previous encoder value to the current value to determine direction
+  int sum = (lastEncoded << 2) | encoded; // Adds the previous encoder value to the current value to combine into single binary string
 
-  if (sum == 0b1110 || sum == 0b0111 || sum == 0b0001 || sum == 0b1000)
+  if (sum == 0b1110 || sum == 0b0111 || sum == 0b0001 || sum == 0b1000) // Checks gray's code sequence to determine if count has increased
     encoderCount++;
 
   lastEncoded = encoded; // Store value for next iteration
