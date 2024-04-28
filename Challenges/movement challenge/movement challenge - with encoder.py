@@ -3,20 +3,8 @@ import math
 
 robot = Robot()
 
-"""
-ARDUINO_SN = "ID No here" # Enter serial number
-SERIAL_BAUD_RATE = 115200
-
-robot = Robot(
-    ignored_arduinos=[ARDUINO_SN],
-    raw_ports=[(ARDUINO_SN, SERIAL_BAUD_RATE)]
-)
-"""
-
 mts = robot.motor_board.motors
 pins = robot.arduino.pins
-
-
 
 ENCODER_CYCLE = (2*math.pi) / (4*374)
 pins[2].mode = INPUT
@@ -53,10 +41,6 @@ def encoderLoop():
             encoderB = str(int(pins[3].digital_read()))
             bin_str = encoderA + encoderB
             str_idx = sequence.index(bin_str)
-            #print(f"BINSTR: {bin_str}\t IDX: {str_idx}")
-            #print(f"Current encoder: {bin_str}\n")#Prev encoder: {prev_seq}")
-
-
 
             # Checks to see if the new binary string read follows the previous reading in the sequence, going clockwise
             if str_idx == -1:
@@ -82,15 +66,13 @@ def encoderLoop():
                 on_short_side = True
                 turning = True
 
-            #robot.sleep(0.1) # - why is this here
         print("LOOP EXITED-----------------------------------------------------------------------------")
 
         mts[0].power = 0
         mts[1].power = 0
         robot.sleep(0.2)
 
-        # Robot turns left (?)
-        # Needs adjustment
+        # Robot turns left 
         mts[0].power = -0.2
         mts[1].power = 0.2
         robot.sleep(3)
