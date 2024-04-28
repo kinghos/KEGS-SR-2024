@@ -280,7 +280,7 @@ def baseUntilUnsee(base_id):
     brake()
 
 
-def encoderDrive():
+def microswitchDrive():
     """Drive a set distance using encoders AND MICROSWITCH"""
     print("encoderDrive")
     TIMEOUT = 9
