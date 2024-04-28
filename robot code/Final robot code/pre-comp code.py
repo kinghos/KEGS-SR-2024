@@ -23,9 +23,13 @@ EGG_ID = 110
 PORT_ID = robot.zone + 120
 STARBOARD_ID = robot.zone + 125
 
-TURNSPEED = 0.15
-DRIVESPEED = 0.25
+TURNSPEED = 0.2
+DRIVESPEED = 0.3
 WAIT = 0.2
+
+uno.pins[2].mode = INPUT
+uno.pins[3].mode = INPUT
+uno.pins[7].mode = INPUT_PULLUP
 
 def brake():
     '''Sets both motors' power to 0.'''
@@ -435,9 +439,15 @@ def main():
     while turnSee(base.id, True, 0.1) == -1:
         helpICantSee()
         base = closestMarker(True, BASE_IDS)
+        while base == None:
+            helpICantSee()
+            base = closestMarker(True, BASE_IDS)
     while markerApproach(base.id, 500, 0.2) == -1:
         helpICantSee()
         base = closestMarker(True, BASE_IDS)
+        while base == None:
+            helpICantSee()
+            base = closestMarker(True, BASE_IDS)
 
     brake()
     robot.sleep(WAIT)
