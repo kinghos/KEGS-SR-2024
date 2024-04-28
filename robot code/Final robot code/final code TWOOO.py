@@ -281,12 +281,10 @@ def baseUntilUnsee(base_id):
 
 
 def microswitchDrive():
-    """Drive a set distance using encoders AND MICROSWITCH"""
-    print("encoderDrive")
+    """Drive until microswitch triggers"""
+    print("microswitchDrive")
     TIMEOUT = 9
     startTime = robot.time()
-    prevDistance = 0
-    notMoving = 0
     while robot.time() - startTime < TIMEOUT:
         drive()
         microswitchState = uno.pins[7].digital_read()
