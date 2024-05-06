@@ -57,17 +57,6 @@ def reverse(speed_level=0):
     mtrs[0].power = -(DRIVESPEED+speed_level) 
     mtrs[1].power = -(DRIVESPEED+speed_level) - 0.03
 
-
-def microswitch():
-    while True:
-        robot.sleep(0.05)
-        sensorInfo = uno.command("e")
-        if sensorInfo:
-            print(sensorInfo)
-            microswitchState = bool(int(sensorInfo.split(",")[1]))
-            return microswitchState
-
-
 def findTarget(targetid):
     '''Identify a marker based on its ID. Return the marker object if found, else return None.'''
     markers = robot.camera.see()
@@ -76,46 +65,6 @@ def findTarget(targetid):
             return marker
     print(f"findTarget couldn't find {targetid}")
     return None
-
-
-"""
-def closestAsteroid(clockwise_turn):
-    '''
-    Returns the first marker it sees whilst turning
-    Returns None if not found / timeout
-    '''
-    print("closestMarker")
-    markers = []
-    markerType = ASTEROID_IDS
-    startTime = robot.time()
-    TIMEOUT = 25
-    closest = None
-
-    # while len(markers) == 0 and robot.time() - startTime < TIMEOUT:
-    #     markers = [marker for marker in robot.camera.see() if marker.id in markerType]
-    #     turn(clockwise_turn)
-    #     robot.sleep(2.5*WAIT)
-    #     brake()
-    #     robot.sleep(WAIT)
-    
-    for i in range(4):
-        markers = [marker for marker in robot.camera.see() if marker.id in markerType]
-        if markers:
-            for marker in markers:
-                if closest == None:
-                    closest = marker
-                if marker.position.distance < closest.position.distance:
-                    closest = marker
-        turn(clockwise_turn)
-        robot.sleep(2.5*WAIT)
-        brake()
-        robot.sleep(WAIT)
-
-    print(closest)
-    brake()
-    return closest
-"""
-
 
 def closestMarker(clockwise_turn, markerType):
     '''
@@ -275,7 +224,7 @@ def baseUntilUnsee(base_id):
         robot.sleep(stopTime)
         target_marker = findTarget(base_id)
         if target_marker == None:
-            return
+            return -1
         markerDist = target_marker.position.distance
     brake()
 
@@ -296,32 +245,6 @@ def microswitchDrive():
             return
         
         robot.sleep(0.1)
-"""
-def checkStuck():
-    print(f"Motor currents/A: {mtrs[0].current}; {mtrs[1].current}")
-    iter = 0
-    noMedCurrent = 0
-    if mtrs[0].current > MED_THRESHOLD_CURRENT or mtrs[1].current > MED_THRESHOLD_CURRENT:
-        noMedCurrent += 1
-        print(f"med exceeded {noMedCurrent}")
-    isStuck = (mtrs[0].current > UPPER_THRESHOLD_CURRENT and mtrs[1].current > UPPER_THRESHOLD_CURRENT) or noMedCurrent > 0
-    while isStuck:
-        print("WE ARE STUCK UPPER EXCEEEDED")
-        if (mtrs[0].current > UPPER_THRESHOLD_CURRENT and mtrs[1].current > UPPER_THRESHOLD_CURRENT) or noMedCurrent > 2:
-            if iter % 2:
-                reverse(0.5)
-            else:
-                turn([True, False][randint(0,1)], 0.8)
-            robot.sleep(float(randint(5,15))/10)
-        if mtrs[0].current > MED_THRESHOLD_CURRENT and mtrs[1].current > MED_THRESHOLD_CURRENT:
-            noMedCurrent += 1
-        isStuck = (mtrs[0].current > UPPER_THRESHOLD_CURRENT and mtrs[1].current > UPPER_THRESHOLD_CURRENT) or noMedCurrent > 0
-        iter += 1
-    #while mtrs[0].current < LOWER_THRESHOLD_CURRENT and mtrs[1].current < LOWER_THRESHOLD_CURRENT:
-    #    print("WE ARE STUCK LOWER EXCEEEDED")
-    #    helpImStuck()
-"""
-
 
 def checkStuck():
     print(f"Motor currents/A: {mtrs[0].current}; {mtrs[1].current}")
@@ -414,7 +337,7 @@ def eggApproach():
         if robot.time() - startTime > TIMEOUT:
             print("Timeout on turnSee for egg")
             return -1
-    encoderDrive()
+    microswitchDrive()
 
 
 def eggMover():
@@ -518,7 +441,6 @@ def main(first=False):
     brake()
     robot.sleep(WAIT)
 
-    # Everything below here needs to be tested again
     release()
 
     ASTEROID_IDS.remove(asteroid.id)
@@ -543,5 +465,5 @@ while True:
     try:
         main()
     except:
-        print("BLIMEY" + '-'*100)
+        print("ERROR" + '-'*100)
         main()
