@@ -2,7 +2,7 @@
 
 Project code for the Student Robotics 2024 competition.
 
-Developed by @kinghos, @AreSeven73 and @umar-9
+Developed by [@kinghos](https://github.com/kinghos), [@AreSeven73](https://github.com/AreSeven73) and [@umar-9](https://github.com/umar-9)
 
 ## Firmware
 
