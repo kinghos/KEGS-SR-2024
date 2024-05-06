@@ -249,7 +249,7 @@ def spaceshipMove():
 
 def baseUntilUnsee(base_id):
     '''
-    Approaches the nearest asteroid (the one directly ahead)
+    Approaches base
     Returns -1 if loses sight of asteroid
     '''
     print("baseUntilUnsee")
@@ -479,7 +479,7 @@ def main(first=False):
         main()
         return
     
-    encoderDrive()
+    microswitchDrive()
     robot.sleep(WAIT)
     mtrs[0].power = 0.3
     robot.sleep(0.5)
