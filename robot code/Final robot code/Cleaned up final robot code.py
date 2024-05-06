@@ -250,7 +250,7 @@ def spaceshipMove():
 def baseUntilUnsee(base_id):
     '''
     Approaches base
-    Returns -1 if loses sight of asteroid
+    Returns -1 if loses sight of base
     '''
     print("baseUntilUnsee")
     target_marker = findTarget(base_id)
