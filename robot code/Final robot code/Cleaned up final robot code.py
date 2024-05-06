@@ -25,12 +25,8 @@ DRIVESPEED = 0.3
 WAIT = 0.2
 
 UPPER_THRESHOLD_CURRENT = 1.5 # Amps - current too high
-# MED_THRESHOLD_CURRENT = 0.85
-# LOWER_THRESHOLD_CURRENT = 0.2 # current too low
 
 print(BASE_IDS)
-#uno.pins[2].mode = INPUT
-#uno.pins[3].mode = INPUT #not used anymore
 uno.pins[7].mode = INPUT_PULLUP
 
 def brake():
@@ -373,9 +369,6 @@ def eggMover():
     release()
     
     return
-
-
-
 
 def main(first=False):
     print("START")
